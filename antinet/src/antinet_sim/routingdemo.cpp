@@ -50,6 +50,7 @@ struct P { float x, y;
 	P norm() const { auto l=dist({0,0}); if (fabs(l)<EPSI) return {0,0}; return {x/l,y/l}; }
 };
 ostream& operator<<(ostream&ostr, const P &obj) { return ostr<<obj.x<<' '<<obj.y<<endl; }
+istream& operator>>(istream&ostr,       P &obj) { return ostr>>obj.x>>     obj.y      ; }
 
 typedef enum  { e_red, e_mark } t_flag;
 struct NODE {
@@ -71,8 +72,8 @@ struct NODE {
 		ostr << savenr <<' '<< p <<' '<< move <<' '<< lev <<' ';
 		ostr<<endl<<peer.size()<<'\t'<<endl; for(const auto &ptr:peer) { ostr<<ptr.lock()->savenr<<' '; } ostr<<endl; }
 	void load(istream &istr,int stage) {
-		istr << savenr <<      p <<      move <<      lev ;
-		...TODO-NOW... // TODO
+		istr >> savenr >>      p >>      move >>      lev ;
+		//...TODO-NOW... // TODO
 	}
 };
 ostream& operator<<(ostream&ostr, const NODE &obj) { obj.write(ostr); return ostr; }
@@ -107,6 +108,7 @@ struct WORLD { vector<SPtr<NODE>> nodes;
 	}
 	void load() { for (int stage=0; stage<=1; ++stage) { std::ifstream ff("data.sim");
 		size_t size; ff>>size;
+		_info("Loading nodes: " << size);
 		for(size_t i=0;i<size;++i) { auto newobj=make_shared<NODE>(); newobj->load(ff,stage); }
 	} }
 };
@@ -127,9 +129,11 @@ bool c_simulation::routingdemo_main() {
 	auto & frame = m_frame; m_goodbye=false;
 
 	world = new WORLD;
-	auto world_root = world->grow(P{600,500},1,300);
-	world->grow(P{1200,500},1,300);
-	world_root->flag.insert(e_red);
+	if (0) {
+		auto world_root = world->grow(P{600,500},1,300);
+		world->grow(P{1200,500},1,300);
+		world_root->flag.insert(e_red);
+	} else world->load();
 
 	while (!m_goodbye && !close_button_pressed) {	try {
 		process_input(); auto &xkey=m_gui->m_key; // int allegro_char = 0;	if (keypressed()) { allegro_char = readkey(); }
@@ -162,9 +166,10 @@ bool c_simulation::routingdemo_main() {
 		} // step
 
 		for(auto obj1 : world->nodes) obj1->draw(frame);
-		scare_mouse();  blit (m_frame, m_screen, 0, 0, 0, 0, m_frame->w, m_frame->h);  unscare_mouse();	rest(1);
+		scare_mouse();  blit (m_frame, m_screen, 0, 0, 0, 0, m_frame->w, m_frame->h);  unscare_mouse();
+	//rest(10);
 	} catch(...) { _erro("Main loop - exception"); throw;	} }
-	world->save();
+	// world->save();
 
 	delete world; world=nullptr;
 	return do_it_again;
