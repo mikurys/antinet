@@ -154,7 +154,7 @@ void c_ipbench::prepare_socket() {
 void c_ipbench::event_loop() {
 	_info("Entering event loop");
 
-	vector<unsigned char> buffer(m_blocksize, 100);
+	vector<unsigned char> buffer(m_blocksize, 222);
 	c_counter counter(2,true);
 	c_counter counter_big(10,false);
 
@@ -165,12 +165,23 @@ void c_ipbench::event_loop() {
 
 		if (true) {
 			++loop_nr;
-			buffer.at(0)='S';
-			int i=1;
+			buffer.at(0)=100;
+			buffer.at(1)=101;
+			buffer.at(2)=102;
+			int i=3;
 			buffer.at(i+0) = loop_nr %256;
 			buffer.at(i+1) = (loop_nr >> 8) %256;
 			buffer.at(i+2) = (loop_nr >> 16) %256;
 			buffer.at(i+3) = (loop_nr >> 24) %256;
+
+			i=buffer.size()-10;
+			buffer.at(i)='X';
+			i++;
+			buffer.at(i+0) = loop_nr %256;
+			buffer.at(i+1) = (loop_nr >> 8) %256;
+			buffer.at(i+2) = (loop_nr >> 16) %256;
+			buffer.at(i+3) = (loop_nr >> 24) %256;
+
 			buffer.at(buffer.size()-1)='E';
 		}
 

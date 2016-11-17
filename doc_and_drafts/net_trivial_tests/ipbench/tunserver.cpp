@@ -318,7 +318,8 @@ void c_tunserver::event_loop() {
 
 	const int buf_size = config_buf_size;
 	unsigned char buf[buf_size];
-	const bool dbg_tun_data=0;
+	const bool dbg_tun_data=1;
+	int dbg_tun_data_nr = 0; // how many times we shown it
 
 	while (1) {
 	//	wait_for_fd_event();
@@ -330,14 +331,19 @@ void c_tunserver::event_loop() {
 			auto size_read=0;
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
 
-
-			if (dbg_tun_data) {
+			if (dbg_tun_data && dbg_tun_data_nr<5) {
+				++dbg_tun_data_nr;
 				// _info("Read: " << size_read);
 				auto show = std::min(size_read,128); // show the data read, but not more then some part
-				for (int i=0; i<show; ++i) cout << static_cast<unsigned int>(buf[i]) << ' ';
+				auto start_pos=0;
+				for (int i=0; i<show; ++i) {
+					cout << static_cast<unsigned int>(buf[i]) << ' ';
+					if ((buf[i]==100) && (buf[i+1]==101) && (buf[i+2]==102)) start_pos = i;
+				}
 				cout << endl;
-				buf[buf_size-1]='\0'; // hack. terminate sting to print it:
-				cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
+				_info("size_read=" << size_read << " start_pos=" << start_pos);
+				// buf[buf_size-1]='\0'; // hack. terminate sting to print it:
+				// cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
 			}
 
 			typedef unsigned short int bufix_t; // buf index
