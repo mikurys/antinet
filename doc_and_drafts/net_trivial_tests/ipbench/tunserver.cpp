@@ -388,6 +388,8 @@ void c_tunserver::event_loop() {
 
 	size_t loop_nr=0;
 
+	typedef unsigned short int bufix_t; // buf index
+
 	while (1) {
 			++loop_nr;
 			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
@@ -399,6 +401,8 @@ void c_tunserver::event_loop() {
 		//if (FD_ISSET(m_tun_fd, &m_fd_set_data)) { // data incoming on TUN - send it out to peers
 			auto size_read=0;
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
+
+			for (bufix_t i=52; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "decrypt"
 
 			const int mark1_pos = 52;
 			bool mark_ok = true;
@@ -439,10 +443,8 @@ void c_tunserver::event_loop() {
 				// cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
 			}
 
-			typedef unsigned short int bufix_t; // buf index
 			static_assert( std::numeric_limits<bufix_t>::max() >= buf_size , "Too small type for buf index." );
 
-	//		for (bufix_t i=0; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "encrypt"
 
 			size_read_tun += size_read;
 		//}

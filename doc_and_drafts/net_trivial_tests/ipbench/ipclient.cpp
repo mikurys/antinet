@@ -35,6 +35,7 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 
 #include "cpputils.hpp" // TODO move to lib later
 
+const unsigned char xorpass = 42;
 
 // TODO move:
 void error(const std::string & msg) {
@@ -151,6 +152,12 @@ void c_ipbench::prepare_socket() {
 	_info("Prepare socket - done");
 }
 
+typedef unsigned short int bufix_t; // buf index
+
+void encrypt_buffer(vector<unsigned char> & buffer) {
+	for (bufix_t i=0; i<buffer.size(); ++i) buffer[i] = buffer[i] ^ xorpass;
+}
+
 void c_ipbench::event_loop() {
 	_info("Entering event loop");
 
@@ -158,11 +165,14 @@ void c_ipbench::event_loop() {
 	c_counter counter(2,true);
 	c_counter counter_big(10,false);
 
+
 	long int loop_nr=0;
 	while (1) {
 		++loop_nr;
 
 		ssize_t sent;
+
+		for (size_t i=0; i<buffer.size(); ++i) buffer[i] = 222;
 
 		if (true) {
 			buffer.at(0)=100;
@@ -184,6 +194,8 @@ void c_ipbench::event_loop() {
 
 			buffer.at(buffer.size()-1)='E';
 		}
+
+		encrypt_buffer(buffer);
 
 		if (m_target_is_ipv6) { // ipv6
 			sockaddr_in6 * sockaddr6_ptr = & m_sockaddr6.get();
