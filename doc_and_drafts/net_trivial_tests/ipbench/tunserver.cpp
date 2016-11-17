@@ -53,6 +53,15 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 
 // ------------------------------------------------------------------
 
+
+// Tweaking the network (e.g. for speeeeed)
+const int config_tun_mtu  = 65500;
+const int config_buf_size = 65535;
+
+static_assert( config_buf_size >= config_tun_mtu , "Buffer should be (I think) not smaller then MTU");
+
+// ------------------------------------------------------------------
+
 void error(const std::string & msg) {
 	std::cout << "Error: " << msg << std::endl;
 	throw std::runtime_error(msg);
@@ -267,7 +276,7 @@ void c_tunserver::prepare_socket() {
 	}
 
 */
-	// NetPlatform_setMTU("galaxy0", 65500);
+	NetPlatform_setMTU("galaxy0", config_tun_mtu );
 	// NetPlatform_setMTU("galaxy0", 1300);
 
 	// create listening socket
@@ -307,7 +316,7 @@ void c_tunserver::event_loop() {
 
 	fd_set fd_set_data;
 
-	const int buf_size=1500; // 65535;
+	const int buf_size = config_buf_size;
 	unsigned char buf[buf_size];
 	const bool dbg_tun_data=0;
 
@@ -319,7 +328,6 @@ void c_tunserver::event_loop() {
 
 		//if (FD_ISSET(m_tun_fd, &m_fd_set_data)) { // data incoming on TUN - send it out to peers
 			auto size_read=0;
-			for (long i=0; i<1; ++i) {
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
 
 
@@ -337,7 +345,6 @@ void c_tunserver::event_loop() {
 
 	//		for (bufix_t i=0; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "encrypt"
 
-			}
 			size_read_tun += size_read;
 		//}
 		/*
