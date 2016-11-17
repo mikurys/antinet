@@ -309,6 +309,7 @@ void c_tunserver::event_loop() {
 
 	const int buf_size=1500; // 65535;
 	unsigned char buf[buf_size];
+	const bool dbg_tun_data=0;
 
 	while (1) {
 	//	wait_for_fd_event();
@@ -320,13 +321,16 @@ void c_tunserver::event_loop() {
 			auto size_read=0;
 			for (long i=0; i<1; ++i) {
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
-			// _info("Read: " << size_read);
 
-			auto show = std::min(size_read,128); // show the data read, but not more then some part
-			for (int i=0; i<show; ++i) cout << static_cast<unsigned int>(buf[i]) << ' ';
-			cout << endl;
-			buf[buf_size-1]='\0'; // hack. terminate sting to print it:
-			cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
+
+			if (dbg_tun_data) {
+				// _info("Read: " << size_read);
+				auto show = std::min(size_read,128); // show the data read, but not more then some part
+				for (int i=0; i<show; ++i) cout << static_cast<unsigned int>(buf[i]) << ' ';
+				cout << endl;
+				buf[buf_size-1]='\0'; // hack. terminate sting to print it:
+				cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
+			}
 
 			typedef unsigned short int bufix_t; // buf index
 			static_assert( std::numeric_limits<bufix_t>::max() >= buf_size , "Too small type for buf index." );

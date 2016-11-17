@@ -160,17 +160,19 @@ void c_ipbench::event_loop() {
 
 	long int loop_nr=0;
 	while (1) {
-		++loop_nr;
 
 		ssize_t sent;
 
-		buffer.at(0)='S';
-		int i=1;
-		buffer.at(i+0) = loop_nr %256;
-		buffer.at(i+1) = (loop_nr >> 8) %256;
-		buffer.at(i+2) = (loop_nr >> 16) %256;
-		buffer.at(i+3) = (loop_nr >> 24) %256;
-		buffer.at(buffer.size()-1)='E';
+		if (true) {
+			++loop_nr;
+			buffer.at(0)='S';
+			int i=1;
+			buffer.at(i+0) = loop_nr %256;
+			buffer.at(i+1) = (loop_nr >> 8) %256;
+			buffer.at(i+2) = (loop_nr >> 16) %256;
+			buffer.at(i+3) = (loop_nr >> 24) %256;
+			buffer.at(buffer.size()-1)='E';
+		}
 
 		if (m_target_is_ipv6) { // ipv6
 			sockaddr_in6 * sockaddr6_ptr = & m_sockaddr6.get();
