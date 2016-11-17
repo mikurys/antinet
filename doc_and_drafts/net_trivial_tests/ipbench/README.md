@@ -5,7 +5,7 @@ How to use this tests:
 
 1)
 In console 1
-make && sudo setcap "cap_net_admin+eip cap_net_raw+eip" ./tunserver.elf  && ./tunserver.elf
+./go-tun
 
 -> and we should get card like:
 galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
@@ -19,7 +19,7 @@ galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
 
 2)
 In console 2
-make && ./ipclient.elf fd00:808:808:808:808:808:808:1111   8555 ipv6 1000
+./go-cli
 
 (
 or
