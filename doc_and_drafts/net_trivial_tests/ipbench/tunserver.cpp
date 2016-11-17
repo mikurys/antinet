@@ -309,10 +309,73 @@ void c_tunserver::wait_for_fd_event() { // wait for fd event
 	_assert(select_result >= 0);
 }
 
+
+/// Were all packets received in order?
+struct c_packet_check {
+	c_packet_check(size_t max_packet_index);
+
+	void see_packet(size_t packet_index);
+
+	vector<bool> m_seen; ///< was this packet seen yet
+	size_t m_count_dupli;
+	size_t m_count_uniq;
+	size_t m_count_reord;
+	size_t m_max_index;
+	bool m_i_thought_lost; ///< we thought packets are lost
+
+	void print() const;
+	bool packets_maybe_lost() const; ///< do we think now that some packets were lost?
+};
+
+c_packet_check::c_packet_check(size_t max_packet_index)
+	: m_seen( max_packet_index , false ), m_max_index(0)
+{ }
+
+bool c_packet_check::packets_maybe_lost() const {
+	size_t max_reodrder = 1000; // if more packets are out then it's probably lost.
+	if (m_max_index > m_count_uniq + max_reodrder) return true;
+	return false;
+}
+
+void c_packet_check::see_packet(size_t packet_index) {
+	if (packet_index < m_max_index) {
+		++ m_count_reord;
+	}
+	m_max_index = std::max( m_max_index , packet_index );
+
+	if (packets_maybe_lost()) m_i_thought_lost=true;
+
+	if (m_seen.at(packet_index)) {
+		++ m_count_dupli;
+		const size_t warn_max = 100;
+		if (m_count_dupli < warn_max)	{
+			_info("duplicate at packet_index="<<packet_index);
+			print();
+		}
+		if (m_count_dupli == warn_max)	_info("duplicate at packet_index - will hide further warnings");
+	} else { // a not-before-seen packet index
+		++ m_count_uniq;
+	}
+	m_seen.at(packet_index) = true;
+}
+
+void c_packet_check::print() const {
+	auto & out = std::cout;
+	out << "Packets: uniq="<<m_count_uniq/1000<<"K ; Max="<<m_max_index
+		<<" Dupli="<<m_count_dupli
+		<<" Reord="<<m_count_reord
+		<<" ";
+
+	if (packets_maybe_lost()) out<<"LOST-PACKETS ";
+	else if (m_i_thought_lost) out<<" (packet seemed lost, but are not now)";
+
+	out<<endl;
+}
+
 void c_tunserver::event_loop() {
 	_info("Entering the event loop");
-	c_counter counter(2,true);
-	c_counter counter_big(10,false);
+	c_counter counter(1,true);
+	c_counter counter_big(3,false);
 
 	fd_set fd_set_data;
 
@@ -321,7 +384,13 @@ void c_tunserver::event_loop() {
 	const bool dbg_tun_data=1;
 	int dbg_tun_data_nr = 0; // how many times we shown it
 
+	c_packet_check packet_check(10*1000*1000);
+
+	size_t loop_nr=0;
+
 	while (1) {
+			++loop_nr;
+			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
 	//	wait_for_fd_event();
 
 		ssize_t size_read_tun=0, size_read_udp=0;
@@ -334,6 +403,21 @@ void c_tunserver::event_loop() {
 			const int mark1_pos = 52;
 			bool mark_ok = true;
 			if (!(  (buf[mark1_pos]==100) && (buf[mark1_pos+1]==101) &&  (buf[mark1_pos+2]==102)  )) mark_ok=false;
+
+			{ // validate counter 1
+				long int packet_index=0;
+				for (int i=0; i<4; ++i) packet_index += static_cast<size_t>(buf[mark1_pos+2+1 +i]) << (8*i);
+				// _info("packet_index " << packet_index);
+
+				if (packet_index >= 400*1000) {
+						cout << "LIMIT - END " << endl << endl;
+					_info("Limit - ending test");
+					break ;
+				} // <====== RET
+
+				packet_check.see_packet(packet_index);
+			}
+
 			if ( buf[size_read-10] != 'X') { _info("Wrong marker X"); mark_ok=false; }
 			if ( buf[size_read-1] != 'E') { _info("Wrong marker E"); mark_ok=false; }
 
@@ -375,10 +459,13 @@ void c_tunserver::event_loop() {
 		else _erro("No event selected?!"); // TODO throw
  		*/
 
-		counter.tick(size_read_tun, std::cout);
-		counter_big.tick(size_read_tun, std::cout);
-		// _info("Tick; size_read_tun="<<size_read_tun);
+		bool printed=false;
+		printed = printed || counter.tick(size_read_tun, std::cout);
+		bool printed_big = counter_big.tick(size_read_tun, std::cout);
+		printed = printed || printed_big;
+		if (printed_big) packet_check.print();
 	}
+	_info("Loop done");
 }
 
 void c_tunserver::run() {

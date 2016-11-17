@@ -160,11 +160,11 @@ void c_ipbench::event_loop() {
 
 	long int loop_nr=0;
 	while (1) {
+		++loop_nr;
 
 		ssize_t sent;
 
 		if (true) {
-			++loop_nr;
 			buffer.at(0)=100;
 			buffer.at(1)=101;
 			buffer.at(2)=102;
@@ -197,8 +197,12 @@ void c_ipbench::event_loop() {
 			if (sent<0) error("Sent failed");
 		}
 
+		if ( 0 == (loop_nr % (10*1000)) ) _info("loop_nr="<<loop_nr/1000<<"K");
+
 		counter.tick(sent, std::cout);
 		counter_big.tick(sent, std::cout);
+
+		if (loop_nr > 400*1000 +100) { _info("Limit - ending test after loop_nr="<<loop_nr); break; }
 	}
 }
 
