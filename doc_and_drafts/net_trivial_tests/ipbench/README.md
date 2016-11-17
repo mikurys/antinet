@@ -7,6 +7,11 @@ How to use this tests:
 ```
 
 
+CURRENT RESULT:
+30 Gb/s data written from ipclient to ipv6 (going to TUN)
+30 Gb/s data read from /dev/tun inside tunserver
+data seems correct (checking magic bytes at begin/end)
+
 
 MTU / buffer size:
 MTU on card: 65500
@@ -39,13 +44,24 @@ In console 2
 or
 ping6 fd00:808:808:808:808:808:808:1111
 for basic test.
-ping will NOT WORK since no peering works, but then console1 will print the ping ICMP6 raw data + TUN/TAP/ethernet? headers)
+ping will NOT WORK since no peering works, but then console1 will print the ping ICMP6 raw data + TUN/TAP/ethernet? headers
+)
 
 -> and then console 1 shows data receive speed: (tun)
 -> while console 2 shows send speed of sending:
 
-Window 10.000s:   119.800 Kpck/s ,  29984.732 Mib/s  =  3748.092 MiB/s ; 
-Window 10.000s:    59.900 Kpck/s ,  29933.548 Mib/s  =  3741.693 MiB/s ; 
+60.584GiB; Speed:    58.824 Kpck/s ,  29194.551 Mib/s  =  3649.319 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  32011.826 Mib/s  =  4001.478 MiB/s ; 
+60.536GiB; Speed:    62.500 Kpck/s ,  30994.415 Mib/s  =  3874.302 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  31986.237 Mib/s  =  3998.280 MiB/s ; 
+
+
+
+
+Also some additional debug could be seen (maybe)
+e.g.:
+info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tunserver.cpp+353 size_read=65052 start_pos=52
+0 0 134 221 96 0 0 0 253 240 17 64 253 0 8 8 8 8 8 8 8 8 8 8 8 8 8 8 253 0 8 8 8 8 8 8 8 8 8 8 8 8 17 17 169 193 33 107 253 240 155 203 100 101 102 5 0 0 0 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 
+info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tunserver.cpp+353 size_read=65052 start_pos=52
+
 
 
 TODO:

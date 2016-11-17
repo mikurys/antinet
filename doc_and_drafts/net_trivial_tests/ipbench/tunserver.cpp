@@ -331,6 +331,15 @@ void c_tunserver::event_loop() {
 			auto size_read=0;
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
 
+			const int mark1_pos = 52;
+			bool mark_ok = true;
+			if (!(  (buf[mark1_pos]==100) && (buf[mark1_pos+1]==101) &&  (buf[mark1_pos+2]==102)  )) mark_ok=false;
+			if ( buf[size_read-10] != 'X') { _info("Wrong marker X"); mark_ok=false; }
+			if ( buf[size_read-1] != 'E') { _info("Wrong marker E"); mark_ok=false; }
+
+			if (!mark_ok) _info("Packet has not expected UDP data! (wrong data read from TUN?) other then "
+				"should be sent by our ipclient test program");
+
 			if (dbg_tun_data && dbg_tun_data_nr<5) {
 				++dbg_tun_data_nr;
 				// _info("Read: " << size_read);
