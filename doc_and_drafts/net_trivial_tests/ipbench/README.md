@@ -13,6 +13,9 @@ MTU on card: 65500
 UDP Datagram size in test ipclient.elf program: 65000 - so that the entire UDP with UDP headers,
 will not fragment IP packet.
 
+Data position:
+in tun raw data, the offset of UDP datagram sent, is +52 octets
+
 1)
 In console 1
 ./go-tun
