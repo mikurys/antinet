@@ -37,12 +37,12 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 // linux (and others?) select use:
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/select.h> 
+#include <sys/select.h>
 
 // for low-level Linux-like systems TUN operations
 #include <fcntl.h>
-#include <sys/ioctl.h> 
-#include <net/if.h> 
+#include <sys/ioctl.h>
+#include <net/if.h>
 // #include <net/if_ether.h> // peer over eth later?
 // #include <net/if_media.h> // ?
 
@@ -186,7 +186,7 @@ class c_tunserver {
 
 		void configure_add_peer(const c_ip46_addr & addr, const std::string & pubkey);
 
-	private: 
+	private:
 		int m_tun_fd; ///< fd of TUN file
 
 		int m_sock_udp; ///< the main network socket (UDP listen, send UDP to each peer)
@@ -218,15 +218,33 @@ void c_tunserver::configure(const std::vector<std::string> & args) {
 	}
 }
 
+/*
+GPL: cjdns LICENCE
+
+void NetPlatform_setMTU(const char* interfaceName,
+                        uint32_t mtu)
+{
+    struct ifreq ifRequest;
+    int s = socketForIfName(interfaceName, AF_INET6, &ifRequest);
+
+    ifRequest.ifr_mtu = mtu;
+    if (ioctl(s, SIOCSIFMTU, &ifRequest) < 0) {
+        close(s);
+    }
+
+    close(s);
+}
+*/
+
 void c_tunserver::prepare_socket() {
 	m_tun_fd = open("/dev/net/tun", O_RDWR);
 	assert(! (m_tun_fd<0) );
 
   as_zerofill< ifreq > ifr; // the if request
-	ifr.ifr_flags = IFF_TAP || IFF_MULTI_QUEUE;
+	ifr.ifr_flags = IFF_TUN ; // || IFF_MULTI_QUEUE;
 	strncpy(ifr.ifr_name, "galaxy%d", IFNAMSIZ);
 	auto errcode_ioctl =  ioctl(m_tun_fd, TUNSETIFF, (void *)&ifr);
-	if (errcode_ioctl < 0)_throw( std::runtime_error("Error in ioctl")); // TODO
+	if (errcode_ioctl < 0)_throw( std::runtime_error("Error in ioctl (creating TUN)")); // TODO
 
 	_mark("Allocated interface:" << ifr.ifr_name);
 
@@ -238,6 +256,19 @@ void c_tunserver::prepare_socket() {
 	address[0] = 0xFD;
 	address[1] = 0x00;
 	NetPlatform_addAddress(ifr.ifr_name, address, 8, Sockaddr_AF_INET6);
+
+/*
+	{
+    as_zerofill< ifreq > ifRequest;
+    ifRequest.ifr_mtu = 1500;
+//		strncpy(ifRequest.ifr_name, "galaxy", IFNAMSIZ);
+    auto errcode_ioctl = ioctl(m_tun_fd, SIOCSIFMTU, &ifRequest);
+		if (errcode_ioctl < 0)_throw( std::runtime_error("Error in ioctl (setting MTU of TUN)")); // TODO
+	}
+
+*/
+	// NetPlatform_setMTU("galaxy0", 65500);
+	// NetPlatform_setMTU("galaxy0", 1300);
 
 	// create listening socket
 	m_sock_udp = socket(AF_INET, SOCK_DGRAM, 0);
@@ -255,10 +286,10 @@ void c_tunserver::prepare_socket() {
 }
 
 void c_tunserver::wait_for_fd_event() { // wait for fd event
-	_info("Selecting");
+	//_info("Selecting");
 	// set the wait for read events:
 	FD_ZERO(& m_fd_set_data);
-	FD_SET(m_sock_udp, &m_fd_set_data); 
+	FD_SET(m_sock_udp, &m_fd_set_data);
 	FD_SET(m_tun_fd, &m_fd_set_data);
 
 	auto fd_max = std::max(m_tun_fd, m_sock_udp);
@@ -276,18 +307,39 @@ void c_tunserver::event_loop() {
 
 	fd_set fd_set_data;
 
-	const int buf_size=65536;
-	char buf[buf_size];
+	const int buf_size=1500; // 65535;
+	unsigned char buf[buf_size];
 
 	while (1) {
-		wait_for_fd_event();
+	//	wait_for_fd_event();
 
-		if (FD_ISSET(m_tun_fd, &m_fd_set_data)) { // data incoming on TUN - send it out to peers
-			auto size_read = read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
-		}
+		ssize_t size_read_tun=0, size_read_udp=0;
+		const unsigned char xorpass=42;
+
+		//if (FD_ISSET(m_tun_fd, &m_fd_set_data)) { // data incoming on TUN - send it out to peers
+			auto size_read=0;
+			for (long i=0; i<1; ++i) {
+			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
+			// _info("Read: " << size_read);
+
+			auto show = std::min(size_read,128); // show the data read, but not more then some part
+			for (int i=0; i<show; ++i) cout << static_cast<unsigned int>(buf[i]) << ' ';
+			cout << endl;
+			buf[buf_size-1]='\0'; // hack. terminate sting to print it:
+			cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
+
+			typedef unsigned short int bufix_t; // buf index
+			static_assert( std::numeric_limits<bufix_t>::max() >= buf_size , "Too small type for buf index." );
+
+	//		for (bufix_t i=0; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "encrypt"
+
+			}
+			size_read_tun += size_read;
+		//}
+		/*
 		else if (FD_ISSET(m_sock_udp, &m_fd_set_data)) { // data incoming on peer (UDP) - will route it or send to our TUN
 			sockaddr_in6 from_addr_raw; // the address of sender, raw format
-			socklen_t from_addr_raw_size; // the size of sender address 
+			socklen_t from_addr_raw_size; // the size of sender address
 
 			from_addr_raw_size = sizeof(from_addr_raw); // IN/OUT parameter to recvfrom, sending it for IN to be the address "buffer" size
 			auto size_read = recvfrom(m_sock_udp, buf, sizeof(buf), 0, reinterpret_cast<sockaddr*>( & from_addr_raw), & from_addr_raw_size);
@@ -295,10 +347,11 @@ void c_tunserver::event_loop() {
 			// sockaddr *src_addr, socklen_t *addrlen);
 		}
 		else _erro("No event selected?!"); // TODO throw
+ 		*/
 
-		int sent=0;
-		counter.tick(sent, std::cout);
-		counter_big.tick(sent, std::cout);
+		counter.tick(size_read_tun, std::cout);
+		counter_big.tick(size_read_tun, std::cout);
+		// _info("Tick; size_read_tun="<<size_read_tun);
 	}
 }
 

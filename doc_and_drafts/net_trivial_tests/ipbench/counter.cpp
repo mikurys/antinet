@@ -71,7 +71,7 @@ void c_counter::print(std::ostream &out) const { ///< prints now the statistics 
 	out << "Window " << time_w << "s: "
 	             << setw(w1) << (avg_pck_w   / 1000) << " Kpck/s "
 	    << ",  " << setw(w1) << (avg_bytes_w  *8 / Mi) << " Mib/s "
-	    << " = " << setw(w1) << (avg_bytes_w     / Mi) << " MiB/s " << ") ";
+	    << " = " << setw(w1) << (avg_bytes_w     / Mi) << " MiB/s " << "; ";
 	out << std::endl;
 }
 
