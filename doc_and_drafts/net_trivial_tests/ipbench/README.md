@@ -8,12 +8,15 @@ How to use this tests:
 
 
 CURRENT RESULT:
-30 Gb/s data written from ipclient to ipv6 (going to TUN)
-30 Gb/s data read from /dev/tun inside tunserver
+30.0 Gb/s for 65KB packets, data written from ipclient to ipv6 (going to TUN)
+ 1.5 Gb/s for  1KB packets ... as above ...
+30.0 Gb/s for 65KB packets, data read from /dev/tun inside tunserver
+ 1.5 Gb/s for  1KB packets ... as above ... around 0.1% are dropped (and seen in ifconfig after test)
 data seems correct (checking magic bytes at begin/end)
 
 
 MTU / buffer size:
+for 65K packets:
 MTU on card: 65500
 UDP Datagram size in test ipclient.elf program: 65000 - so that the entire UDP with UDP headers,
 will not fragment IP packet.
@@ -35,23 +38,42 @@ galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
 
 
-
-2)
+2a)
 In console 2
 ./go-cli
-
-(
-or
-ping6 fd00:808:808:808:808:808:808:1111
-for basic test.
-ping will NOT WORK since no peering works, but then console1 will print the ping ICMP6 raw data + TUN/TAP/ethernet? headers
-)
 
 -> and then console 1 shows data receive speed: (tun)
 -> while console 2 shows send speed of sending:
 
+after the test, when tunserver.elf waits for ENTER to quit, ifconfig of card can look like:
+galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+          inet6 addr: fd00:808:808:808:808:808:808:808/8 Scope:Global
+          UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:65500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1997530 errors:0 dropped:2971 overruns:0 carrier:0 <------------------
+          collisions:0 txqueuelen:500
+          RX bytes:0 (0.0 B)  TX bytes:3092176440 (2.8 GiB)
+
+In tun:
+ 2.759GiB; Speed:   146.846 Kpck/s ,   1738.779 Mib/s  =   217.347 MiB/s ; Window 1.000s:   152.000 Kpck/s ,   1799.805 Mib/s  =   224.976 MiB/s ; 
+ Window 3.000s:   159.667 Kpck/s ,   1890.584 Mib/s  =   236.323 MiB/s ; 
+ Packets: uniq=1909K ; Max=1911470 Dupli=0 Reord=0 Missing(now)=2470 0.13% LOST-PACKETS 
+
+
+2b) *** this results are if edited to send 65000 packets ***
+In console 2
+./go-cli
+
 60.584GiB; Speed:    58.824 Kpck/s ,  29194.551 Mib/s  =  3649.319 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  32011.826 Mib/s  =  4001.478 MiB/s ; 
 60.536GiB; Speed:    62.500 Kpck/s ,  30994.415 Mib/s  =  3874.302 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  31986.237 Mib/s  =  3998.280 MiB/s ; 
+
+
+2x)
+
+easy test:
+ping6 fd00:808:808:808:808:808:808:1111
+for basic test.
+ping will NOT WORK since no peering works, but then console1 will print the ping ICMP6 raw data + TUN/TAP/ethernet? headers
 
 
 
@@ -65,7 +87,8 @@ info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tuns
 
 
 TODO:
-increase speed by MTU 1500 to 9000 and more?
+[x] increase speed by MTU 1500 to 9000 and more? -- yes, big packets go fast and no lost
+[ ] increase card txqueue to remove the 0.1% dropped at 1K size of packets
 
 
 

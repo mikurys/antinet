@@ -35,6 +35,9 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 
 #include "cpputils.hpp" // TODO move to lib later
 
+#include "config.h"
+
+const bool encryption = false;
 const unsigned char xorpass = 42;
 
 // TODO move:
@@ -163,7 +166,7 @@ void c_ipbench::event_loop() {
 
 	vector<unsigned char> buffer(m_blocksize, 222);
 	c_counter counter(2,true);
-	c_counter counter_big(10,false);
+	c_counter counter_big(3,false);
 
 
 	long int loop_nr=0;
@@ -172,7 +175,7 @@ void c_ipbench::event_loop() {
 
 		ssize_t sent;
 
-		for (size_t i=0; i<buffer.size(); ++i) buffer[i] = 222;
+		if (encryption) for (size_t i=0; i<buffer.size(); ++i) buffer[i] = 222;
 
 		if (true) {
 			buffer.at(0)=100;
@@ -195,7 +198,7 @@ void c_ipbench::event_loop() {
 			buffer.at(buffer.size()-1)='E';
 		}
 
-		encrypt_buffer(buffer);
+		if (encryption) encrypt_buffer(buffer);
 
 		if (m_target_is_ipv6) { // ipv6
 			sockaddr_in6 * sockaddr6_ptr = & m_sockaddr6.get();
@@ -214,7 +217,7 @@ void c_ipbench::event_loop() {
 		counter.tick(sent, std::cout);
 		counter_big.tick(sent, std::cout);
 
-		if (loop_nr > 400*1000 +100) { _info("Limit - ending test after loop_nr="<<loop_nr); break; }
+		if (loop_nr > (global_config_end_after_packet + 1000)) { _info("Limit - ending test after loop_nr="<<loop_nr); break; }
 	}
 }
 

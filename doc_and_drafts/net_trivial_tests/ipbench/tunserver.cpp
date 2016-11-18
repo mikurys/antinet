@@ -51,14 +51,19 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 // #include <net/if_tap.h>
 #include <linux/if_tun.h>
 
+#include "config.h"
+
 // ------------------------------------------------------------------
 
 
 // Tweaking the network (e.g. for speeeeed)
 const int config_tun_mtu  = 65500;
-const int config_buf_size = 65535;
+const int config_buf_size = 65535 * 1;
+
+typedef unsigned int bufix_t; // buf index
 
 static_assert( config_buf_size >= config_tun_mtu , "Buffer should be (I think) not smaller then MTU");
+static_assert( std::numeric_limits<bufix_t>::max() >= config_buf_size , "Too small type for buf index." );
 
 // ------------------------------------------------------------------
 
@@ -333,6 +338,7 @@ c_packet_check::c_packet_check(size_t max_packet_index)
 
 bool c_packet_check::packets_maybe_lost() const {
 	size_t max_reodrder = 1000; // if more packets are out then it's probably lost.
+	// do we have packet-index much higher then number of packets recevied at all:
 	if (m_max_index > m_count_uniq + max_reodrder) return true;
 	return false;
 }
@@ -360,14 +366,18 @@ void c_packet_check::see_packet(size_t packet_index) {
 }
 
 void c_packet_check::print() const {
+	auto missing = m_max_index - m_count_uniq; // mising now. maybe will come in a moment as reordered, or maybe are really lost
+	double missing_part = 0;
+	if (m_max_index>0) missing_part = (double)missing / m_max_index;
 	auto & out = std::cout;
 	out << "Packets: uniq="<<m_count_uniq/1000<<"K ; Max="<<m_max_index
 		<<" Dupli="<<m_count_dupli
 		<<" Reord="<<m_count_reord
-		<<" ";
+		<<" Missing(now)=" << missing << " "
+			<< std::setw(3) << std::setprecision(2) << std::fixed << missing_part*100. << "%";
 
-	if (packets_maybe_lost()) out<<"LOST-PACKETS ";
-	else if (m_i_thought_lost) out<<" (packet seemed lost, but are not now)";
+	if (packets_maybe_lost()) out<<" LOST-PACKETS ";
+	else if (m_i_thought_lost) out<<" (packet seemed lost in past, but now all looks fine)";
 
 	out<<endl;
 }
@@ -388,7 +398,6 @@ void c_tunserver::event_loop() {
 
 	size_t loop_nr=0;
 
-	typedef unsigned short int bufix_t; // buf index
 
 	while (1) {
 			++loop_nr;
@@ -402,7 +411,7 @@ void c_tunserver::event_loop() {
 			auto size_read=0;
 			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
 
-			for (bufix_t i=52; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "decrypt"
+			// for (bufix_t i=52; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "decrypt"
 
 			const int mark1_pos = 52;
 			bool mark_ok = true;
@@ -413,7 +422,7 @@ void c_tunserver::event_loop() {
 				for (int i=0; i<4; ++i) packet_index += static_cast<size_t>(buf[mark1_pos+2+1 +i]) << (8*i);
 				// _info("packet_index " << packet_index);
 
-				if (packet_index >= 400*1000) {
+				if (packet_index >= global_config_end_after_packet ) {
 						cout << "LIMIT - END " << endl << endl;
 					_info("Limit - ending test");
 					break ;
@@ -443,7 +452,6 @@ void c_tunserver::event_loop() {
 				// cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
 			}
 
-			static_assert( std::numeric_limits<bufix_t>::max() >= buf_size , "Too small type for buf index." );
 
 
 			size_read_tun += size_read;
@@ -501,6 +509,10 @@ int main(int argc, char **argv) {
 	for (int i=0; i<argc; ++i) args.push_back(argv[i]);
 	myserver.configure(args);
 	myserver.run();
+
+	std::cout << "All done. Press ENTER to exit (and probably delete the virtual card)" << std::endl;
+	string x;
+	std::getline(std::cin,x);
 }
 
 
