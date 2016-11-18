@@ -11,7 +11,7 @@ CURRENT RESULT:
 30.0 Gb/s for 65KB packets, data written from ipclient to ipv6 (going to TUN)
  1.5 Gb/s for  1KB packets ... as above ...
 30.0 Gb/s for 65KB packets, data read from /dev/tun inside tunserver
- 1.5 Gb/s for  1KB packets ... as above ... around 0.1% are dropped (and seen in ifconfig after test)
+ 1.5 Gb/s for  1KB packets ... as above ... around 0.1% are dropped unless txqueuelen>2000 (see below)
 data seems correct (checking magic bytes at begin/end)
 
 
@@ -36,6 +36,11 @@ galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
           collisions:0 txqueuelen:500 
           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+
+*** also *** to avoid losing 0.1% of packets as LOST/dropped,
+after starting the go-tun, run as root command:
+ifconfig galaxy0 txqueuelen 5000
 
 
 2a)
