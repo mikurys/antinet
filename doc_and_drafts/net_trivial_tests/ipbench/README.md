@@ -45,7 +45,7 @@ ifconfig galaxy0 txqueuelen 5000
 
 2a)
 In console 2
-./go-cli
+./go-cli-big   # to run test on 65K sized packages
 
 -> and then console 1 shows data receive speed: (tun)
 -> while console 2 shows send speed of sending:
@@ -67,7 +67,7 @@ In tun:
 
 2b) *** this results are if edited to send 65000 packets ***
 In console 2
-./go-cli
+./go-cli-big
 
 60.584GiB; Speed:    58.824 Kpck/s ,  29194.551 Mib/s  =  3649.319 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  32011.826 Mib/s  =  4001.478 MiB/s ; 
 60.536GiB; Speed:    62.500 Kpck/s ,  30994.415 Mib/s  =  3874.302 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  31986.237 Mib/s  =  3998.280 MiB/s ; 
