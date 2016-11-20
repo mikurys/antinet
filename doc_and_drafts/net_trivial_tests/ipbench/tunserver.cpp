@@ -255,7 +255,7 @@ void c_tunserver::prepare_socket() {
 	assert(! (m_tun_fd<0) );
 
   as_zerofill< ifreq > ifr; // the if request
-	ifr.ifr_flags = IFF_TUN ; // | IFF_MULTI_QUEUE;
+	ifr.ifr_flags = IFF_TUN ; // || IFF_MULTI_QUEUE;
 	strncpy(ifr.ifr_name, "galaxy%d", IFNAMSIZ);
 	auto errcode_ioctl =  ioctl(m_tun_fd, TUNSETIFF, (void *)&ifr);
 	if (errcode_ioctl < 0)_throw( std::runtime_error("Error in ioctl (creating TUN)")); // TODO
@@ -390,16 +390,7 @@ void c_tunserver::event_loop() {
 	fd_set fd_set_data;
 
 	const int buf_size = config_buf_size;
-	const int buf_amount = 10;
-
-	typedef unsigned char *t_buf_ptr;
-	t_buf_ptr bufv[buf_amount];
-	for (int i=0; i<buf_amount; ++i) bufv[i] = static_cast<t_buf_ptr>( malloc( buf_size ) );
-
-	int buf_nr_now=99999; // which buffer in the bufv will we read now. if >= buf_amount then need to read new buffers
-
-	//unsigned char buf[buf_size];
-
+	unsigned char buf[buf_size];
 	const bool dbg_tun_data=1;
 	int dbg_tun_data_nr = 0; // how many times we shown it
 
@@ -411,7 +402,6 @@ void c_tunserver::event_loop() {
 	while (1) {
 			++loop_nr;
 			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
-			if (loop_nr == 2) break;
 	//	wait_for_fd_event();
 
 		ssize_t size_read_tun=0, size_read_udp=0;
@@ -419,21 +409,7 @@ void c_tunserver::event_loop() {
 
 		//if (FD_ISSET(m_tun_fd, &m_fd_set_data)) { // data incoming on TUN - send it out to peers
 			auto size_read=0;
-
-			if (buf_nr_now >= buf_amount) { // we read all buffers already. need to read new buffers
-				_info("Reading buffers");
-				// size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
-
-				struct iovec iov[buf_amount]; // the list of buffer (+sizes) in format for the readv() function
-				for (int i=0; i<buf_amount; ++i) {
-					iov[i].iov_base = bufv[i];
-					iov[i].iov_len = buf_size;
-				}
-				size_read += read(m_tun_fd, iov, buf_amount); // read data from TUN into many buffers
-				buf_nr_now=0; // now we should read 0-th of the read buffer
-			}
-			unsigned char * buf = bufv[buf_nr_now];
-			++buf_nr_now;
+			size_read += read(m_tun_fd, buf, sizeof(buf)); // read data from TUN
 
 			// for (bufix_t i=52; i<size_read; ++i) buf[i] = buf[i] ^ xorpass ; // "decrypt"
 
