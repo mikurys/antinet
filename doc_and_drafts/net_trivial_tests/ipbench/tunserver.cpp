@@ -391,9 +391,9 @@ void c_packet_check::print() const {
 
 void c_tunserver::event_loop() {
 	_info("Entering the event loop");
-	c_counter counter(1,true);
-	c_counter counter_all(999999,true);
-	c_counter counter_big(3,false);
+	c_counter counter    (std::chrono::seconds(1),true);
+	c_counter counter_big(std::chrono::seconds(3),true);
+	c_counter counter_all(std::chrono::seconds(999999),true);
 
 	fd_set fd_set_data;
 
@@ -483,7 +483,7 @@ void c_tunserver::event_loop() {
 		bool printed_big = counter_big.tick(size_read_tun, std::cout);
 		printed = printed || printed_big;
 		if (printed_big) packet_check.print();
-		counter_all.add(size_read_tun);
+		counter_all.tick(size_read_tun, std::cout, true);
 	}
 	_info("Loop done");
 

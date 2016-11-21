@@ -3,6 +3,7 @@ How to use this tests:
 
 ** some data here sometimes could be not 100% correct, check sources and run yourself to confirm **
 - errata:  in previous commit, the mtu was increased while this doc here shown old ifconfig info (wrong)
+- errata:  in previous versions, the counter/stats was not exact: look at the window (1s, 3s window etc) reading only.
 
 ```
 

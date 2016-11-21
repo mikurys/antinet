@@ -165,8 +165,8 @@ void c_ipbench::event_loop() {
 	_info("Entering event loop");
 
 	vector<unsigned char> buffer(m_blocksize, 222);
-	c_counter counter(2,true);
-	c_counter counter_big(3,false);
+	c_counter counter    (std::chrono::seconds(1),true);
+	c_counter counter_big(std::chrono::seconds(3),false);
 
 
 	long int loop_nr=0;
