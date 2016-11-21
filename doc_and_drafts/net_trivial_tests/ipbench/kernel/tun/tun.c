@@ -1223,6 +1223,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
 	int vlan_offset = 0, copied;
 
 	if (!(tun->flags & TUN_NO_PI)) {
+		printk( KERN_INFO " len=%d, skb->len=%d" , len , skb->len);  // meshnet.pl XXX
 		if ((len -= sizeof(pi)) < 0)
 			return -EINVAL;
 
@@ -1237,6 +1238,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
 	}
 
 	if (tun->flags & TUN_VNET_HDR) {
+		printk( KERN_INFO " vnet hdr"); // XXX
 		struct virtio_net_hdr gso = { 0 }; /* no info leak */
 		if ((len -= tun->vnet_hdr_sz) < 0)
 			return -EINVAL;
@@ -1329,6 +1331,7 @@ done:
 static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
 			   const struct iovec *iv, ssize_t len, int noblock)
 {
+int i;
 	struct sk_buff *skb;
 	ssize_t ret = 0;
 	int peeked, err, off = 0;
@@ -1342,13 +1345,21 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
 		return -EIO;
 
 	/* Read frames from queue */
+
+
+for (i=0; i<1; ++i) {
 	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
 				  &peeked, &off, &err);
 	if (skb) {
 		ret = tun_put_user(tun, tfile, skb, iv, len);
+		printk( KERN_INFO " ret=%ld" , (long int)ret); // XXX
 		kfree_skb(skb);
 	} else
+	{
 		ret = err;
+		break;
+	}
+}
 
 	return ret;
 }

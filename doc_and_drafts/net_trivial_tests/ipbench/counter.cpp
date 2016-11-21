@@ -61,17 +61,21 @@ void c_counter::print(std::ostream &out) const { ///< prints now the statistics 
 	out	<< std::setprecision(3) << std::fixed;
 
 	if (m_is_main) {
+		if (time_all > 0) {
 		out << setw(6) << m_bytes_all/Gi << "GiB; "
 		    << "Speed: "
 	             << setw(w1) << (avg_pck_all / K) << " Kpck/s "
 		    << ",  " << setw(w1) << (avg_bytes_all*8 / Mi) << " Mib/s "
 		    << " = " << setw(w1) << (avg_bytes_all   / Mi) << " MiB/s " << "; "
 		    ;
+		} else out << "(no time_all yet); ";
 	}
+	if (time_w > 0) {
 	out << "Window " << time_w << "s: "
 	             << setw(w1) << (avg_pck_w   / 1000) << " Kpck/s "
 	    << ",  " << setw(w1) << (avg_bytes_w  *8 / Mi) << " Mib/s "
 	    << " = " << setw(w1) << (avg_bytes_w     / Mi) << " MiB/s " << "; ";
+	} else out << "(no time_w yet); ";
 	out << std::endl;
 }
 
