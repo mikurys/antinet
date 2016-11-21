@@ -253,7 +253,7 @@ void c_ipbench::event_loop() {
 					// _info("msg i="<<i<<" len="<<len);
 					sent += len ;
 				}
-				// _info("Totall send in all msg now: " << sent);
+				// _info("at loop="<<loop_nr<<" aggr_ix(incremented)="<<aggr_ix<<" Totall send in all msg now: " << sent << " in messages: " << sendmmsg_err);
 
 				aggr_ix=0;
 			} // if now sending the aggr table
