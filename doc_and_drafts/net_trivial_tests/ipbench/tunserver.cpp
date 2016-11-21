@@ -314,6 +314,13 @@ void c_tunserver::wait_for_fd_event() { // wait for fd event
 	_assert(select_result >= 0);
 }
 
+/*
+TODO
+struct c_packet_stats {
+	double 
+};
+*/
+
 
 /// Were all packets received in order?
 struct c_packet_check {
@@ -401,7 +408,7 @@ void c_tunserver::event_loop() {
 
 	while (1) {
 			++loop_nr;
-			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
+//			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
 	//	wait_for_fd_event();
 
 		ssize_t size_read_tun=0, size_read_udp=0;
@@ -429,6 +436,7 @@ void c_tunserver::event_loop() {
 				} // <====== RET
 
 				packet_check.see_packet(packet_index);
+	//			packet_stats.see_size( size_read ); // TODO
 			}
 
 			if ( buf[size_read-10] != 'X') { _info("Wrong marker X"); mark_ok=false; }
