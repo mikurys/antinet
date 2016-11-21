@@ -9,10 +9,12 @@ How to use this tests:
 
 
 CURRENT RESULT:
+(on comp Dragon: AMD FX(tm)-6300 Six-Core Processor , Debian 8)
+
 30.0 Gb/s for 65KB packets, data written from ipclient to ipv6 (going to TUN)
- 1.5 Gb/s for  1KB packets ... as above ...
+ 1.3 Gb/s for  1KB packets ... as above ...
 30.0 Gb/s for 65KB packets, data read from /dev/tun inside tunserver
- 1.5 Gb/s for  1KB packets ... as above ... around 0.1% are dropped unless txqueuelen>2000 (see below)
+ 1.3 Gb/s for  1KB packets ... as above ... around 0.1% are dropped unless txqueuelen>2000 (see below)
 data seems correct (checking magic bytes at begin/end)
 
 

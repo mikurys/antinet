@@ -1347,7 +1347,7 @@ int i;
 	/* Read frames from queue */
 
 
-for (i=0; i<1; ++i) {
+for (i=0; i<1; ++i) { // XXX
 	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
 				  &peeked, &off, &err);
 	if (skb) {
@@ -1359,7 +1359,7 @@ for (i=0; i<1; ++i) {
 		ret = err;
 		break;
 	}
-}
+} // XXX
 
 	return ret;
 }
