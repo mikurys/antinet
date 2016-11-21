@@ -70,6 +70,8 @@ class c_ipbench {
 		int m_sock; ///< the network socket
 		as_zerofill< sockaddr_in  > m_sockaddr4 ; ///< socket address (ipv4)
 		as_zerofill< sockaddr_in6 > m_sockaddr6 ; ///< socket address (ipv6)
+
+		int m_multisend; //< send messsages groupd as this many (e.g. sendmmsg). 0==disable, use sendmsg
 };
 
 // ------------------------------------------------------------------
@@ -108,8 +110,13 @@ void c_ipbench::configure(const std::vector<std::string> & args) {
 	m_blocksize = atoi(args.at(4).c_str());
 	assert(m_blocksize >= 1);
 
+	m_multisend = atoi(args.at(5).c_str());
+	assert(m_multisend >= 0);
+
 	cout << "Running as: " << ( m_target_is_ipv6 ? "ipv6" : "ipv4" ) << " to addr " << m_target_addr
-		<< " port " << m_target_port << " blocksize " << m_blocksize << endl;
+		<< " port " << m_target_port << " blocksize " << m_blocksize
+		<< " multisend " << m_multisend
+		<< endl;
 }
 
 void c_ipbench::prepare_socket() {
@@ -164,16 +171,25 @@ void encrypt_buffer(vector<unsigned char> & buffer) {
 void c_ipbench::event_loop() {
 	_info("Entering event loop");
 
-	vector<unsigned char> buffer(m_blocksize, 222);
+	typedef vector<unsigned char> t_buffer;
+	vector<t_buffer> buffer_aggr( m_multisend ); // our buffers to aggregate and multi-send
+
+	for (int i=0; i<m_multisend; ++i) buffer_aggr.at(i) = t_buffer(m_blocksize, static_cast<unsigned char>(222));
+
 	c_counter counter    (std::chrono::seconds(1),true);
 	c_counter counter_big(std::chrono::seconds(3),false);
 
 
 	long int loop_nr=0;
+	long int aggr_ix=0; // the aggr-buffer currently to use
 	while (1) {
 		++loop_nr;
 
-		ssize_t sent;
+		// _info("Working on aggregated buffer, number: aggr_ix="<<aggr_ix);
+		t_buffer buffer = buffer_aggr[ aggr_ix ];
+		aggr_ix++;
+
+		ssize_t sent=0;
 
 		if (encryption) for (size_t i=0; i<buffer.size(); ++i) buffer[i] = 222;
 
@@ -201,13 +217,53 @@ void c_ipbench::event_loop() {
 		if (encryption) encrypt_buffer(buffer);
 
 		if (m_target_is_ipv6) { // ipv6
-			sockaddr_in6 * sockaddr6_ptr = & m_sockaddr6.get();
-			sockaddr * addr_ptr = reinterpret_cast<sockaddr*>(sockaddr6_ptr); // guaranteed by Linux. TODO
-			sent = sendto(m_sock, static_cast<void*>(buffer.data()), buffer.size(),  0, addr_ptr,	sizeof(m_sockaddr6));
-			if (sent<0) error("Sent failed");
+
+			bool aggr_send_now = ( aggr_ix == buffer_aggr.size() );
+
+			if (aggr_send_now) {
+
+				sockaddr_in6 * sockaddr6_ptr = & m_sockaddr6.get();
+				sockaddr * addr_ptr = reinterpret_cast<sockaddr*>(sockaddr6_ptr); // guaranteed by Linux. TODO
+
+				const int msghdr_tabsize = 512;
+				int msghdr_size = aggr_ix ;
+				struct mmsghdr tab_mmsghdr[msghdr_tabsize];
+
+				// http://man7.org/linux/man-pages/man2/readv.2.html
+				iovec iovec_tab[msghdr_tabsize][1];
+
+				for (int ai=0; ai<aggr_ix; ++ai) { // aggregate msg that we now process - ai (aggr. i)
+					struct msghdr & a_msghdr = tab_mmsghdr[ai].msg_hdr; // multiheader of this aggr. msg
+
+					std::memset(&a_msghdr, 0, sizeof a_msghdr); // zero
+					a_msghdr.msg_name = addr_ptr;
+					a_msghdr.msg_namelen = sizeof(m_sockaddr6);
+						iovec_tab[ai][0].iov_base = static_cast<void*>(buffer.data());
+						iovec_tab[ai][0].iov_len = buffer.size();
+					a_msghdr.msg_iov = & iovec_tab[ai][0];
+					a_msghdr.msg_iovlen = 1;
+				}
+
+				int sendmmsg_err = sendmmsg(m_sock, &tab_mmsghdr[0], msghdr_size, 0);
+				// _info("sendmmsg_err = " << sendmmsg_err);
+				if (sendmmsg_err<0) error("Sent failed");
+
+				for (int i=0; i<sendmmsg_err; ++i) {
+					auto len = tab_mmsghdr[i].msg_len ;
+					// _info("msg i="<<i<<" len="<<len);
+					sent += len ;
+				}
+				// _info("Totall send in all msg now: " << sent);
+
+				aggr_ix=0;
+			} // if now sending the aggr table
+
+				// sent = sendmsg(m_sock, static_cast<void*>(buffer.data()), buffer.size(),  0, addr_ptr,	sizeof(m_sockaddr6));
+
 		} else { // ipv4
 			sockaddr_in * sockaddr_ptr = & m_sockaddr4.get();
 			sockaddr * addr_ptr = reinterpret_cast<sockaddr*>(sockaddr_ptr); // guaranteed by Linux. TODO
+			_info("TODO not ready!"); throw std::runtime_error("Not ready code here");
 			sent = sendto(m_sock, static_cast<void*>(buffer.data()), buffer.size(),  0, addr_ptr,	sizeof(m_sockaddr4));
 			if (sent<0) error("Sent failed");
 		}
