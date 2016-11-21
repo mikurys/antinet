@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project (ipbench)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -pedantic -pthread -O3")
 
 ADD_CUSTOM_TARGET(fast
 		COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=fast ${CMAKE_SOURCE_DIR}
@@ -33,7 +33,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "release")
         message("Release build")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O3 -DNDEBUG")
 endif()
-
 
 include_directories(../../../antinet/src/antinet_sim/)
 add_executable(ipclient.elf ipclient.cpp counter.cpp)
