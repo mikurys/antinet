@@ -34,7 +34,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "release")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O3 -DNDEBUG")
 endif()
 
-
 include_directories(../../../antinet/src/antinet_sim/)
 add_executable(ipclient.elf ipclient.cpp counter.cpp)
 add_executable(ipserver.elf ipserver.cpp)

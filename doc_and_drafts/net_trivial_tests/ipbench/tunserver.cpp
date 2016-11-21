@@ -55,7 +55,6 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 
 // ------------------------------------------------------------------
 
-
 // Tweaking the network (e.g. for speeeeed)
 const int config_tun_mtu  = 65500;
 const int config_buf_size = 65535 * 1;
@@ -208,6 +207,8 @@ class c_tunserver {
 		fd_set m_fd_set_data; ///< select events e.g. wait for UDP peering or TUN input
 
 		vector<c_peering> m_peer; ///< my peers
+
+                int number_of_threads;
 };
 
 // ------------------------------------------------------------------
@@ -228,8 +229,12 @@ void c_tunserver::configure(const std::vector<std::string> & args) {
 		if (args.at(i) == "-p") {
 	//		configure_add_peer( args.at(i+1) , args.at(i+2) ); // XXX
 		}
-
 	}
+        auto it = std::find(args.begin(), args.end(), "-j");
+        if (it != args.end())
+                number_of_threads = atoi((++it)->c_str());
+        else
+                number_of_threads = 1;
 }
 
 /*
@@ -255,7 +260,7 @@ void c_tunserver::prepare_socket() {
 	assert(! (m_tun_fd<0) );
 
   as_zerofill< ifreq > ifr; // the if request
-	ifr.ifr_flags = IFF_TUN ; // || IFF_MULTI_QUEUE;
+	ifr.ifr_flags = IFF_TUN | IFF_MULTI_QUEUE;
 	strncpy(ifr.ifr_name, "galaxy%d", IFNAMSIZ);
 	auto errcode_ioctl =  ioctl(m_tun_fd, TUNSETIFF, (void *)&ifr);
 	if (errcode_ioctl < 0)_throw( std::runtime_error("Error in ioctl (creating TUN)")); // TODO
@@ -408,7 +413,6 @@ void c_tunserver::event_loop() {
 
 	size_t loop_nr=0;
 
-
 	while (1) {
 			++loop_nr;
 //			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
@@ -503,11 +507,20 @@ void c_tunserver::event_loop() {
 void c_tunserver::run() {
 	std::cout << "Starting tests" << std::endl;
 	prepare_socket();
-	event_loop();
+        if (number_of_threads > 10 && number_of_threads > 0)
+                number_of_threads = 1;
+
+        std::vector<std::thread*> threads(number_of_threads - 1);
+        for(int i = 0; i< number_of_threads - 1; i++)
+                threads[i] = new std::thread([this](){this->event_loop();});
+
+        event_loop();
+
+        for(int i = 0; i< number_of_threads - 1; i++)
+                threads[i]->join();
 }
 
 // ------------------------------------------------------------------
-
 
 int main(int argc, char **argv) {
 	std::cerr << disclaimer << std::endl;
@@ -536,5 +549,3 @@ int main(int argc, char **argv) {
 	string x;
 	std::getline(std::cin,x);
 }
-
-

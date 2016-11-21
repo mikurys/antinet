@@ -1,4 +1,3 @@
 #!/bin/bash
 
-make && sudo setcap "cap_net_admin+eip cap_net_raw+eip" ./tunserver.elf  && ./tunserver.elf
-
+make && sudo setcap "cap_net_admin+eip cap_net_raw+eip" ./tunserver.elf  && ./tunserver.elf -j 1
