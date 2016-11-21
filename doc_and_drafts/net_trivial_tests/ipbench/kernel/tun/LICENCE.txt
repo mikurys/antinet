@@ -1,0 +1,2 @@
+The files here, especially tun.c are probably on other licence (e.g. GPL),
+see text inside them for more information.
