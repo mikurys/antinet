@@ -11,11 +11,16 @@ How to use this tests:
 CURRENT RESULT:
 (on comp Dragon: AMD FX(tm)-6300 Six-Core Processor , Debian 8)
 
+30.0 Gb/s for 65KB packets is the goal - if not crypto
+30.0 Gb/s for 65KB packets is the goal - if crypto (4 or 8 core good CPU [1])
+ 1.0 Gb/s for 1KB packets is the goal, since even loopback UDP sending of such small packets is slow
+
 30.0 Gb/s for 65KB packets, data written from ipclient to ipv6 (going to TUN)
  1.3 Gb/s for  1KB packets ... as above ...
 30.0 Gb/s for 65KB packets, data read from /dev/tun inside tunserver
  1.3 Gb/s for  1KB packets ... as above ... around 0.1% are dropped unless txqueuelen>2000 (see below)
 data seems correct (checking magic bytes at begin/end)
+
 
 
 MTU / buffer size:
@@ -93,10 +98,12 @@ info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tuns
 info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tunserver.cpp+353 size_read=65052 start_pos=52
 
 
+[1] crypto speeds done with ./tunserver.elf --demo crypto_stream_bench given around 1 GB = 8 Gbps (on 1 core)
+
 
 TODO:
 [x] increase speed by MTU 1500 to 9000 and more? -- yes, big packets go fast and no lost
-[ ] increase card txqueue to remove the 0.1% dropped at 1K size of packets
+[x] increase card txqueue to remove the 0.1% dropped at 1K size of packets
 
 
 

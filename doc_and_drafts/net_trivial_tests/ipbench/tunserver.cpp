@@ -404,6 +404,8 @@ void c_tunserver::event_loop() {
 
 	c_packet_check packet_check(10*1000*1000);
 
+	bool warned_marker=false; // ever warned about marker yet?
+
 	size_t loop_nr=0;
 
 
@@ -439,12 +441,19 @@ void c_tunserver::event_loop() {
 				packet_check.see_packet(packet_index);
 	//			packet_stats.see_size( size_read ); // TODO
 			}
+			if ( buf[size_read-10] != 'X') {
+				if (!warned_marker) _info("Wrong marker X");
+				warned_marker=true;
+				mark_ok=false;
+			}
+			if ( buf[size_read-1] != 'E') {
+				if (!warned_marker) _info("Wrong marker E");
+				warned_marker=true;
+				mark_ok=false;
+			}
 
-			if ( buf[size_read-10] != 'X') { _info("Wrong marker X"); mark_ok=false; }
-			if ( buf[size_read-1] != 'E') { _info("Wrong marker E"); mark_ok=false; }
-
-			if (!mark_ok) _info("Packet has not expected UDP data! (wrong data read from TUN?) other then "
-				"should be sent by our ipclient test program");
+	//		if (!mark_ok) _info("Packet has not expected UDP data! (wrong data read from TUN?) other then "
+	//			"should be sent by our ipclient test program");
 
 			if (dbg_tun_data && dbg_tun_data_nr<5) {
 				++dbg_tun_data_nr;
@@ -455,13 +464,12 @@ void c_tunserver::event_loop() {
 					cout << static_cast<unsigned int>(buf[i]) << ' ';
 					if ((buf[i]==100) && (buf[i+1]==101) && (buf[i+2]==102)) start_pos = i;
 				}
-				cout << endl;
 				_info("size_read=" << size_read << " start_pos=" << start_pos);
+
+				cout << endl << endl;
 				// buf[buf_size-1]='\0'; // hack. terminate sting to print it:
 				// cout << "Buf=[" << string( reinterpret_cast<char*>(static_cast<unsigned char*>(&buf[0])), size_read) << "] buf_size="<< buf_size << endl;
 			}
-
-
 
 			size_read_tun += size_read;
 		//}
