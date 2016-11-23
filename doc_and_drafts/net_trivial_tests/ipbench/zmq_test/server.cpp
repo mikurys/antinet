@@ -14,7 +14,7 @@ int main () {
         typedef std::chrono::high_resolution_clock Time;
         typedef std::chrono::milliseconds ms;
   const char * protocol =
-    "tcp://*:5555";
+    "ipc://localhost:5555";
     //  Prepare our context and socket
   zmq::context_t context (1);
   zmq::socket_t socket (context, ZMQ_PUB);
@@ -24,7 +24,7 @@ int main () {
   socket.bind(protocol);
   unsigned long data_counter = 0;
   unsigned long counter = 0;
-  const int data_size = 100;
+  const int data_size = 1000;
   auto t0 = Time::now();
   while (counter < 15*1000*1000) {
         unsigned char data[data_size];
@@ -39,5 +39,8 @@ int main () {
   ms d = std::chrono::duration_cast<ms>(duration);
   std::cout << "packets send: " << counter << ", data send: " << data_counter << " B in : " << d.count() << " ms" << std::endl;
   std::cout << "kpck/s : " << counter/d.count() << ", Mbit/s : " << ((data_counter/(d.count()/1000.))/(1024.*1024.))*8 << ", MB/s : " << (data_counter/(d.count()/1000.))/(1024.*1024.) << std::endl;
+  char end[] = "end";
+  zmq::message_t request((void*)end, sizeof(end), NULL);
+  socket.send(request);
   return 0;
 }

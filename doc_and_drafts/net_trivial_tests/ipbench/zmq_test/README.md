@@ -6,12 +6,20 @@ How to use this tests:
   * run client followed by server in other terminal
 
 ```
-average speed:
+average speed for packets 1000 B (tcp):
 
-packets send: 15000000, data send: 1500000000 B in : 6848 ms
-kpck/s : 2190, Mbit/s : 1671.16, MB/s : 208.895
+packets send: 15000000, data send: 15000000000 B in : 46021 ms
+kpck/s : 325, Mbit/s : 2486.71, MB/s : 310.839
 
-packets read: 10000000, data read: 1000000000 B in : 5179 ms
-kpck/s : 1930, Mbit/s : 1473.14, MB/s : 184.143
+packets read: 14991633, data read: 14991633004 B in : 45988 ms
+kpck/s : 325, Mbit/s : 2487.11, MB/s : 310.888
+
+average speed for packets 1000 B (ipc):
+
+packets send: 15000000, data send: 15000000000 B in : 57068 ms
+kpck/s : 262, Mbit/s : 2005.34, MB/s : 250.668
+
+packets read: 14965080, data read: 14965080004 B in : 56949 ms
+kpck/s : 262, Mbit/s : 2004.86, MB/s : 250.607
 
 ```

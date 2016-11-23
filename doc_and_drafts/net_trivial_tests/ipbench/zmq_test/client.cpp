@@ -1,5 +1,5 @@
 #include <zmq.hpp>
-#include <string>
+#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <iostream>
@@ -11,11 +11,11 @@ int main (void)
         typedef std::chrono::milliseconds ms;
   zmq::context_t context(1);
   const char * protocol =
-    "tcp://localhost:5555";
+    "ipc://localhost:5555";
   //  Socket to talk to server
   printf ("Connecting to server...");
   zmq::socket_t sock (context, ZMQ_SUB);
-  //  sock.bind("epgm://eth0;239.192.1.1:5556");
+  //sock.bind(protocol);
   sock.connect(protocol);
   sock.setsockopt (ZMQ_SUBSCRIBE, "", 0);
   printf ("done. \n");
@@ -23,13 +23,14 @@ int main (void)
   unsigned long data_counter = 0;
   unsigned long counter = 0;
   auto t0 = Time::now();
-  int request_nbr;
-  while(counter < 10*1000*1000){
+  while(true){
     zmq::message_t reply;
-    sock.recv (&reply, 0);
+    sock.recv (&reply);
     if(counter ==0)
         t0 = Time::now();
     data_counter += reply.size();
+    if(strcmp((char *)reply.data(), "end") == 0)
+        break;
     counter++;
   }
   sock.close();
