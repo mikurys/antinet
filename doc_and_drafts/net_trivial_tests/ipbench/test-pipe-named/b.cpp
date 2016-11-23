@@ -35,7 +35,10 @@ int main ()
 				size_t size_packets = sizeof(t_onemsg);
 
          if (size_packets != sizeof(onemsg)) {
-         	 cout << "Receive problem, invalid size" << endl;
+         	 throw std::runtime_error("Receive problem, invalid size");
+       	 }
+         if (onemsg[7] != 42) {
+         	 throw std::runtime_error("Receive problem, invalid MARKER");
        	 }
 
 				bool printed=false;

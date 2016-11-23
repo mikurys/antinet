@@ -4,8 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include "../counter.hpp"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#include "../counter.hpp"
 #include "config.h"
 
 using namespace std;
@@ -20,7 +25,8 @@ int main ()
 	c_counter counter_big(std::chrono::seconds(3),true);
 	c_counter counter_all(std::chrono::seconds(999999),true);
 
-	ofstream thefile("foo.pipe");
+	int thefile = open("foo.pipe", O_WRONLY | O_CREAT );
+	// ofstream thefile("foo.pipe");
 
 	while(1) {
 		size_t size_packets;
@@ -29,8 +35,12 @@ int main ()
 
 			while (1) {
 			for(long int i = 0; i < 1*1000*1000; ++i){
-				thefile.write( reinterpret_cast<char*>( &onemsg ), sizeof(onemsg));
+				onemsg[7]=42;
+
+				// thefile.write( reinterpret_cast<char*>( &onemsg ), sizeof(onemsg));
+				write(thefile, reinterpret_cast<char*>( &onemsg ), sizeof(onemsg));
 				size_packets = sizeof(t_onemsg);
+
 
 				bool printed=false;
 				printed = printed || counter.tick(size_packets, std::cout);

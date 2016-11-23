@@ -1,3 +1,3 @@
 
-typedef char t_onemsg[100];
+typedef char t_onemsg[1000];
 
