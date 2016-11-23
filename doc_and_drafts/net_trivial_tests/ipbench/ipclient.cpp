@@ -255,6 +255,10 @@ void c_ipbench::event_loop() {
 				}
 				// _info("at loop="<<loop_nr<<" aggr_ix(incremented)="<<aggr_ix<<" Totall send in all msg now: " << sent << " in messages: " << sendmmsg_err);
 
+				counter.tick(sent, std::cout);
+				counter_big.tick(sent, std::cout);
+
+
 				aggr_ix=0;
 			} // if now sending the aggr table
 
@@ -269,9 +273,6 @@ void c_ipbench::event_loop() {
 		}
 
 		if ( 0 == (loop_nr % (10*1000)) ) _info("loop_nr="<<loop_nr/1000<<"K");
-
-		counter.tick(sent, std::cout);
-		counter_big.tick(sent, std::cout);
 
 		if (loop_nr > (global_config_end_after_packet + 1000)) { _info("Limit - ending test after loop_nr="<<loop_nr); break; }
 	}

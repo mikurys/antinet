@@ -11,9 +11,12 @@ How to use this tests:
 CURRENT RESULT:
 (on comp Dragon: AMD FX(tm)-6300 Six-Core Processor , Debian 8)
 
+
 30.0 Gb/s for 65KB packets is the goal - if not crypto
 30.0 Gb/s for 65KB packets is the goal - if crypto (4 or 8 core good CPU [1])
- 1.0 Gb/s for 1KB packets is the goal, since even loopback UDP sending of such small packets is slow
+ 1.0 Gb/s for 1KB packets is the minimal goal - because even loopback UDP sending of such small packets is slow
+
+ 1.7 Gb/s for  1KB packets, sending (sendmmsg by 64 packets, as well as single sendmsg) to ::1 (no one listens) [problem1]
 
 30.0 Gb/s for 65KB packets, data written from ipclient to ipv6 (going to TUN)
  1.3 Gb/s for  1KB packets ... as above ...
@@ -21,6 +24,7 @@ CURRENT RESULT:
  1.3 Gb/s for  1KB packets ... as above ... around 0.1% are dropped unless txqueuelen>2000 (see below)
 data seems correct (checking magic bytes at begin/end)
 
+0.559GiB; Speed:   2.351 Kpck/s ,  1793.883 Mib/s  = 224.235 MiB/s ; Window 1.270s:   2.362 Kpck/s ,  1801.908 Mib/s  = 225.239 MiB/s ;
 
 
 MTU / buffer size:
@@ -100,8 +104,17 @@ info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tuns
 
 [1] crypto speeds done with ./tunserver.elf --demo crypto_stream_bench given around 1 GB = 8 Gbps (on 1 core)
 
+=== Problems/solutions
 
-TODO:
+Problem1: how to send fastly many smaller (1000b, 100b) packets on localhost from user application to our tun server.
+Idea:
+[ ] use interprocess, and LD_PRELOAD replace sendto/sendmsg/... with custom fast functions
+... [ ] evaluate speed of zeromq for this
+... [ ] evaluate speed of named piped for this
+... [ ] evaluate speed of shmem
+
+
+=== Other TODO
 [x] increase speed by MTU 1500 to 9000 and more? -- yes, big packets go fast and no lost
 [x] increase card txqueue to remove the 0.1% dropped at 1K size of packets
 
