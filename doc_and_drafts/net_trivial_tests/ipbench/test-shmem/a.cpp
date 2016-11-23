@@ -56,9 +56,9 @@ int main ()
 				//_info("after wait spinlock");
 
 				// write it:
-	//			std::memset( const_cast<char*>(shm_data), pattern%255, shm_data_size);
+				std::memset( const_cast<char*>(shm_data), pattern%255, shm_data_size);
 				short int s=shm_data_size;
-				for (short int i=0; i<s; ++i) shm_data[i] = pattern;
+		//		for (short int i=0; i<s; ++i) shm_data[i] = pattern;
 
 				*(shm_data+7) = 42; // mark
 				*(shm_data+99) = 99 %256; // mark
