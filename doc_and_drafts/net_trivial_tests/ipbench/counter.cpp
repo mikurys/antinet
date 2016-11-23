@@ -16,6 +16,13 @@ double c_counter::time_to_second(std::chrono::steady_clock::duration dur) {
 	return micro / static_cast<double>(1*1000*1000);
 }
 
+c_counter::t_count c_counter::get_pck_all() const { ///< read all packets count
+	return m_pck_all;
+}
+c_counter::t_count c_counter::get_bytes_all() const { ///< read all packets bytes
+	return m_bytes_all;
+}
+
 void c_counter::add(c_counter::t_count bytes) { ///< general type for integrals (number of packets, of bytes)
 	m_pck_all += 1;
 	m_pck_w += 1;

@@ -18,14 +18,15 @@ using namespace std;
 
 int main ()
 {
+	// t_onemsg __attribute__ ((aligned (256)))   onemsg;
 	t_onemsg onemsg;
 
 	std::cout << "Starting writes" << std::endl;
 	c_counter counter    (std::chrono::seconds(1),true);
-	c_counter counter_big(std::chrono::seconds(3),true);
+	c_counter counter_big(std::chrono::seconds(10),true);
 	c_counter counter_all(std::chrono::seconds(999999),true);
 
-	int thefile = open("foo.pipe", O_WRONLY | O_CREAT | O_DIRECT );
+	int thefile = open("foo.pipe", O_WRONLY | O_CREAT );
 	_info("Descriptor thefile=" << thefile);
 	if (thefile<0) { _warn("Can not open pipe"); return 1 ; } else _info("FD looks fine");
 	// ofstream thefile("foo.pipe");
@@ -35,7 +36,7 @@ int main ()
 
 		try{
 
-			while (1) {
+			//while (1) {
 			for(long int i = 0; i < 1*1000*1000; ++i){
 				onemsg[7]=42;
 
@@ -51,15 +52,18 @@ int main ()
 				//if (printed_big) packet_check.print();
 				counter_all.tick(size_packets, std::cout, true);
 			}
-			}
+			//}
 
 		}
 		catch(std::exception &ex){
 			std::cout << ex.what() << std::endl;
 			return 1;
 		}
+
+		if (counter_all.get_bytes_all() > (30*1024*1024*1024LL + 100)) break;
 	}
 
-	std::cout << "All done" << std::endl;
+	std::cout << "All done" << std::endl << "\n\n";
+	counter_all.print(std::cout);
 	return 0;
 }

@@ -14,6 +14,9 @@ class c_counter {
 
 		void print(std::ostream &out) const; ///< prints now the statistics
 
+		t_count get_pck_all() const; ///< read all packets count
+		t_count get_bytes_all() const; ///< read all bytes count
+
 	private:
 		const t_duration m_tick_len; ///< how often should I tick - it's both the window size, and the rate of e.g. print()
 
