@@ -5,9 +5,16 @@
 #include <fstream>
 #include <vector>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+
 #include "../counter.hpp"
 
 #include "config.h"
+
 
 using namespace std;
 
@@ -19,7 +26,10 @@ int main ()
 	c_counter counter_big(std::chrono::seconds(3),true);
 	c_counter counter_all(std::chrono::seconds(999999),true);
 
-	ifstream thefile("foo.pipe");
+	int thefile = open("foo.pipe", O_RDONLY | O_DIRECT );
+	_info("Opened the file as thefile=" << thefile);
+	if (thefile<0) { _warn("Can not open pipe"); return 1 ; }
+	// ifstream thefile("foo.pipe");
 
 	while (1) {
 		std::cout << "Starting reads" << std::endl;
@@ -31,8 +41,9 @@ int main ()
 			while(1) {
       for(int i = 0; i < 1*1000*1000; ++i){
 
-				thefile.read( reinterpret_cast<char*>( &onemsg ), sizeof(onemsg));
-				size_t size_packets = sizeof(t_onemsg);
+				// thefile.read( reinterpret_cast<char*>( &onemsg ), sizeof(onemsg));
+				auto ret = read( thefile, reinterpret_cast<char*>( &onemsg ), sizeof(onemsg) );
+				size_t size_packets = ret;
 
          if (size_packets != sizeof(onemsg)) {
          	 throw std::runtime_error("Receive problem, invalid size");

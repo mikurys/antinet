@@ -25,7 +25,9 @@ int main ()
 	c_counter counter_big(std::chrono::seconds(3),true);
 	c_counter counter_all(std::chrono::seconds(999999),true);
 
-	int thefile = open("foo.pipe", O_WRONLY | O_CREAT );
+	int thefile = open("foo.pipe", O_WRONLY | O_CREAT | O_DIRECT );
+	_info("Descriptor thefile=" << thefile);
+	if (thefile<0) { _warn("Can not open pipe"); return 1 ; } else _info("FD looks fine");
 	// ofstream thefile("foo.pipe");
 
 	while(1) {
