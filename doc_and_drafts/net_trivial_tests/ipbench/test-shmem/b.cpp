@@ -26,6 +26,7 @@ using namespace boost::interprocess;
 
 int main ()
 {
+	_info("main");
 
 	c_counter counter    (std::chrono::seconds(1),true);
 	c_counter counter_big(std::chrono::seconds(10),true);
@@ -45,27 +46,28 @@ int main ()
 	std::cout << "Starting reads" << std::endl;
 	try {
    while (1) {
-				while (*(shm_ptr+0) != shflag_owner_reader) {}; // spinlock untill this memory belongs to me
+			size_t size_packets=0;
 
-				size_t size_packets = shm_size;
+			while (*(shm_ptr+0) != shflag_owner_reader) {}; // spinlock untill this memory belongs to me
 
-//         if (shm_size != sizeof(onemsg)) {
-//         	 throw std::runtime_error("Receive problem, invalid size");
-//       	 }
-         if ( *(shm_data+7) != 42) {
-         	 throw std::runtime_error("Receive problem, invalid MARKER");
-       	 }
+			// use our mem:
+			 if ( *(shm_data+7) != 42) {
+				 throw std::runtime_error("Receive problem, invalid MARKER");
+			 }
+			if ( *(shm_data+99) != (99%256)) {
+				 throw std::runtime_error("Receive problem, invalid MARKER");
+			}
+			size_packets += shm_size;
 
-       	 // end of read
-				*(shm_ptr+0) = shflag_owner_writer; // mark
+			// end of read:
+			*(shm_ptr+0) = shflag_owner_writer; // semafor
 
-
-				bool printed=false;
-				printed = printed || counter.tick(size_packets, std::cout);
-				bool printed_big = counter_big.tick(size_packets, std::cout);
-				printed = printed || printed_big;
-				//if (printed_big) packet_check.print();
-				counter_all.tick(size_packets, std::cout, true);
+			bool printed=false;
+			printed = printed || counter.tick(size_packets, std::cout);
+			bool printed_big = counter_big.tick(size_packets, std::cout);
+			printed = printed || printed_big;
+			//if (printed_big) packet_check.print();
+			counter_all.tick(size_packets, std::cout, true);
 
 		if (counter_all.get_bytes_all() > (30*1024*1024*1024LL)) break;
 

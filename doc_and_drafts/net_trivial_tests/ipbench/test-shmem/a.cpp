@@ -32,27 +32,36 @@ int main ()
 	_info("Create shm...");
 	shared_memory_object shm (create_only, "MySharedMemory", read_write);
 	_info("Truncate shm...");
-	shm.truncate(100);
+	shm.truncate(config_packet_size);
 	_info("Map region shm...");
 	mapped_region region(shm, read_write);
 	volatile char* shm_ptr = static_cast<char*>( region.get_address() );
 	volatile char* shm_data = shm_ptr + 4; // skip shm header (and align?)
 	auto shm_size = region.	get_size();
+	auto shm_data_size = shm_size - 4;
 
 	*(shm_ptr+0) = shflag_owner_writer; // mark - for us
 
 	_info("shm: data="<<(void*)shm_data<<" size="<<shm_size);
 
 	std::cout << "Starting writes" << std::endl;
+	int pattern=0;
+
 	try {
 		while(1) {
+			++pattern;
 
 				//_info("before wait spinlock");
-				while (*(shm_ptr+0) != shflag_owner_writer) {}; // spinlock untill this memory belongs to me
+//				while (*(shm_ptr+0) != shflag_owner_writer) {}; // spinlock untill this memory belongs to me
 				//_info("after wait spinlock");
 
 				// write it:
+				// std::memset(  shm_data, pattern%255, shm_data_size);
+				short int s=shm_data_size;
+				for (short int i=0; i<s; ++i) shm_data[i] = pattern;
+
 				*(shm_data+7) = 42; // mark
+				*(shm_data+99) = 99 %256; // mark
 				//_info("before set spinlock");
 				*(shm_ptr+0) = shflag_owner_reader; // mark - for TUN
 				//_info("after set spinlock");

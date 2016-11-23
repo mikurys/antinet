@@ -41,7 +41,7 @@ bool c_counter::tick(c_counter::t_count bytes, std::ostream &out, bool silent) {
 
 		m_time_first = time_now(); // and other times in reset
 	}
-	if (0 == (m_pck_all%1000)) {
+	if (0 == (m_pck_all%(1000*500))) {
 		// std::cerr<<m_bytes_all<<std::endl; std::cout << m_time_last << " >? " << m_time_ws << std::endl;
 		m_time_last = time_now();
 		if (m_time_last >= m_time_ws + m_tick_len) { do_reset=1; do_print=1; }
