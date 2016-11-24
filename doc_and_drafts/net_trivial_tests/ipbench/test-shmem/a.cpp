@@ -35,8 +35,8 @@ int main ()
 	shm.truncate(config_packet_size);
 	_info("Map region shm...");
 	mapped_region region(shm, read_write);
-	volatile char* shm_ptr = static_cast<char*>( region.get_address() );
-	volatile char* shm_data = shm_ptr + 4; // skip shm header (and align?)
+	volatile unsigned char* shm_ptr = static_cast<unsigned char*>( region.get_address() );
+	volatile unsigned char* shm_data = shm_ptr + 4; // skip shm header (and align?)
 	auto shm_size = region.	get_size();
 	auto shm_data_size = shm_size - 4;
 
@@ -45,20 +45,28 @@ int main ()
 	_info("shm: data="<<(void*)shm_data<<" size="<<shm_size);
 
 	std::cout << "Starting writes" << std::endl;
-	int pattern=0;
+	unsigned long int pattern_nr=0;
+
+	const bool dbg_pat=0; // pattern
+	const bool dbg_si=0; // spinlock index
 
 	try {
 		while(1) {
-			++pattern;
+			++pattern_nr;
 
 				//_info("before wait spinlock");
-				while (*(shm_ptr+0) != shflag_owner_writer) {}; // spinlock untill this memory belongs to me
+				long long int si=0;
+				while (*(shm_ptr+0) != shflag_owner_writer) { ++si; }; // spinlock untill this memory belongs to me
+				if (dbg_si) _info("si="<<si);
 				//_info("after wait spinlock");
 
 				// write it:
-				std::memset( const_cast<char*>(shm_data), pattern%255, shm_data_size);
-				short int s=shm_data_size;
-		//		for (short int i=0; i<s; ++i) shm_data[i] = pattern;
+				unsigned char pat = pattern_nr%256;
+				std::memset( const_cast<unsigned char*>(shm_data), pat, shm_data_size);
+				//unsigned int s = shm_data_size;
+				//for (unsigned int i=0; i<s; ++i) shm_data[i] = pat;
+				if (dbg_pat) _info("At pattern_nr="<<pattern_nr<<": filled with pat=" << static_cast<int>(pat)
+					<< " size: "<<shm_data_size<<" from shm_data="<<(void*)shm_data);
 
 				*(shm_data+7) = 42; // mark
 				*(shm_data+99) = 99 %256; // mark

@@ -37,18 +37,27 @@ int main ()
 	_info("Truncate shm...");
 	mapped_region region(shm, read_write);
 	_info("Map region shm...");
-	volatile char* shm_ptr = static_cast<char*>( region.get_address() );
-	volatile char* shm_data = shm_ptr + 4; // skip shm header (and align?)
+	volatile unsigned char* shm_ptr = static_cast<unsigned char*>( region.get_address() );
+	volatile unsigned char* shm_data = shm_ptr + 4; // skip shm header (and align?)
 	auto shm_size = region.	get_size();
+	auto shm_data_size = shm_size - 4;
 
 	_info("shm: data="<<(void*)shm_data<<" size="<<shm_size);
 
 	std::cout << "Starting reads" << std::endl;
+	unsigned long int pattern_nr=0;
+
+	const bool dbg_pat=0; // pattern
+	const bool dbg_si=0; // spinlock index
+
 	try {
    while (1) {
+   		++pattern_nr;
 			size_t size_packets=0;
 
-			while (*(shm_ptr+0) != shflag_owner_reader) {}; // spinlock untill this memory belongs to me
+			long long int si=0;
+			while (*(shm_ptr+0) != shflag_owner_reader) { ++si; }; // spinlock untill this memory belongs to me
+			if (dbg_si) _info("si="<<si);
 
 			// use our mem:
 			 if ( *(shm_data+7) != 42) {
@@ -57,6 +66,17 @@ int main ()
 			if ( *(shm_data+99) != (99%256)) {
 				 throw std::runtime_error("Receive problem, invalid MARKER");
 			}
+			unsigned char pat = pattern_nr%256;
+			long int pos;
+			do { // find a pos that is not a marker
+				pos = rand() % shm_data_size;
+			} while (!( (pos!=7) && (pos!=99)  ));
+			if (!( *(shm_data + pos) == pat )) {
+				_info("Invalid pattern, while pattern_nr="<<pattern_nr<<" at pos="<<(int)pos
+					<<" was: "<< static_cast<int>(*(shm_data + pos)) << ", expected: " << static_cast<int>(pat) );
+				throw std::runtime_error("Receive problem, invalid data");
+			}
+
 			size_packets += shm_size;
 
 			// end of read:

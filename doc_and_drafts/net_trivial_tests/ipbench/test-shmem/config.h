@@ -1,5 +1,7 @@
 
-#define config_packet_size 100
+//#define config_packet_size 100
+#define config_packet_size 1000
+//#define config_packet_size 65000
 
 // typedef char t_onemsg[100];
 
