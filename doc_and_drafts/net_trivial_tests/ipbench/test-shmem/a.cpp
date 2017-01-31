@@ -76,7 +76,7 @@ int the_program(bool program_is_client)
 
 	auto main_loop = [&](int thread_nr) -> int {
 		// atomic<unsigned long int> pattern_nr{0};
-		atomic<unsigned long int> pattern_nr{0}; // <=== pattern is per-thread now, not global!
+		unsigned long int pattern_nr{0}; // <=== pattern is per-thread now, not global!
 
 	// --- for thread ---
 
@@ -93,7 +93,10 @@ int the_program(bool program_is_client)
 	}
 
 	if (program_is_client) {
-		_info("I am the client - writting flag");
+		{
+			lock_guard<mutex> lg(lock_stats);
+			_info("I am the client - writting flag");
+		}
 		*(msg_header+0) = shflag_owner_writer; // mark - we use this SHM-msg
 	}
 
@@ -234,7 +237,7 @@ int the_program(bool program_is_client)
 	}
 	vector<thread> threads;
 	threads.push_back( move( thread(main_loop , 0)));
-//	threads.push_back( move( thread(main_loop , 1)));
+	threads.push_back( move( thread(main_loop , 1)));
 	{
 		lock_guard<mutex> lg(lock_stats);
 		_info("Threads are running.");
