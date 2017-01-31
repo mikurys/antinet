@@ -22,3 +22,14 @@ Packet size: 9000 B gives: 100.000GiB; Speed: 1286.213 Kpck/s ,  88317.261 Mib/s
 @65K 2mt: 213 Gpbs (~ +98% increase for 2 thread)
 79.302GiB; Speed: 430.298 Kpck/s ,  213389.484 Mib/s  = 26673.685 MiB/s ; Window 1.007s: 447.015 Kpck/s ,  221679.415 Mib/s  = 27709.927 MiB/s ;
 
+@9K 2mt: 96 Gpbs (better increase 2 thread when less locking on stats)
+this report does NOT add the two of per-thread counters, so it shows half speed here:
+info: a.cpp+230 Exiting thread #1
+100.000GiB; Speed: 736.125 Kpck/s ,  50545.703 Mib/s  = 6318.213 MiB/s ; Window 16.207s: 736.125 Kpck/s ,  50545.699 Mib/s  = 6318.212 MiB/s ; 
+96.057GiB; Speed: 669.976 Kpck/s ,  46003.626 Mib/s  = 5750.453 MiB/s ; Window 1.001s: 1048.868 Kpck/s ,  72020.069 Mib/s  = 9002.509 MiB/s ; 
+info: a.cpp+216 mt#0 will exit, since we processed all=107374185000 B.
+info: a.cpp+230 Exiting thread #0
+100.000GiB; Speed: 680.093 Kpck/s ,  46698.297 Mib/s  = 5837.287 MiB/s ; Window 17.542s: 680.093 Kpck/s ,  46698.296 Mib/s  = 5837.287 MiB/s ; 
+
+
+

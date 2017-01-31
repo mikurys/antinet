@@ -39,9 +39,6 @@ int the_program(bool program_is_client)
 
 	string shm_name = "MySharedMemory";
 
-	c_counter counter    (std::chrono::seconds(1),true);
-	c_counter counter_big(std::chrono::seconds(10),true);
-	c_counter counter_all(std::chrono::seconds(999999),true);
 	const int config_thread_count = 2; // number of threads / SHM regions
 	const int config_header_size = 4; // bytes for header e.g. the flag
 
@@ -79,6 +76,10 @@ int the_program(bool program_is_client)
 		unsigned long int pattern_nr{0}; // <=== pattern is per-thread now, not global!
 
 	// --- for thread ---
+
+	c_counter counter    (std::chrono::seconds(1),true);
+	c_counter counter_big(std::chrono::seconds(10),true);
+	c_counter counter_all(std::chrono::seconds(999999),true);
 
 	const size_t msg_size = (config_packet_size + config_header_size); // e.g. 9000+4 = 9004
 	volatile unsigned char* msg_ptr      = shm_data + msg_size*thread_nr; // TODO +offset(pre thread), ptr to: "[flags][packet-data]"
@@ -132,7 +133,8 @@ int the_program(bool program_is_client)
 				//_info("after set spinlock");
 
 				{
-					lock_guard<mutex> lg(lock_stats);
+					// lock_guard<mutex> lg(lock_stats); -- counter is threadlocal now XXX
+					// but still this is an small race, because .tick() can use cout XXX TODO add silent_tick()
 
 					// ship first iteration time (maybe we waited for other program to start):
 					if (loop_nr <= 2) { counter.reset_time(); counter_big.reset_time(); counter_all.reset_time(); }
@@ -197,7 +199,9 @@ int the_program(bool program_is_client)
 				*(msg_header+0) = shflag_owner_writer; // semafor
 
 				{
-					lock_guard<mutex> lg(lock_stats);
+					// lock_guard<mutex> lg(lock_stats); -- counter is threadlocal now XXX
+					// but still this is an small race, because .tick() can use cout XXX TODO add silent_tick()
+
 					bool printed=false;
 					printed = printed || counter.tick(size_packets, std::cout);
 					bool printed_big = counter_big.tick(size_packets, std::cout);
@@ -225,6 +229,7 @@ int the_program(bool program_is_client)
 		lock_guard<mutex> lg(lock_stats);
 		_info("Exiting thread #" << thread_nr);
 	}
+	counter_all.print(std::cout);
 
 	} ; // thread main loop
 
@@ -255,7 +260,7 @@ int the_program(bool program_is_client)
 
 	std::cout << "All done" << std::endl << "\n\n";
 	cout << "Packet size: " << config_packet_size << " B" << " gives: ";
-	counter_all.print(std::cout);
+	// counter_all.print(std::cout);
 	return 0;
 }
 
