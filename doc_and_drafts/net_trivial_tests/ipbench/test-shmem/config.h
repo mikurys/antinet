@@ -1,8 +1,8 @@
 
 //#define config_packet_size 100
 //#define config_packet_size 1000
-#define config_packet_size 9000
-//#define config_packet_size 65000
+//#define config_packet_size 9000
+#define config_packet_size 65000
 
 const long long int config_test_maxsize = 100*1024*1024*1024LL*1LL;
 

@@ -19,4 +19,6 @@ Packet size: 9000 B gives: 100.000GiB; Speed: 1096.316 Kpck/s ,  75278.033 Mib/s
 @9K 2mt: 88 Gbps (small increase for 2 thread...)
 Packet size: 9000 B gives: 100.000GiB; Speed: 1286.213 Kpck/s ,  88317.261 Mib/s  = 11039.658 MiB/s ; Window 9.276s: 1286.213 Kpck/s ,  88317.253 Mib/s  = 11039.657 MiB/s ; 
 
+@65K 2mt: 213 Gpbs (~ +98% increase for 2 thread)
+79.302GiB; Speed: 430.298 Kpck/s ,  213389.484 Mib/s  = 26673.685 MiB/s ; Window 1.007s: 447.015 Kpck/s ,  221679.415 Mib/s  = 27709.927 MiB/s ;
 
