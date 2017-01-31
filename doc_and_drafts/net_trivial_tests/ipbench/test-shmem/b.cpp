@@ -50,6 +50,7 @@ int main ()
 	const bool dbg_pat=0; // pattern
 	const bool dbg_si=0; // spinlock index
 
+	cout << "Packet size: " << shm_data_size << " B" << endl;
 	try {
    while (1) {
    		++pattern_nr;
@@ -89,7 +90,7 @@ int main ()
 			//if (printed_big) packet_check.print();
 			counter_all.tick(size_packets, std::cout, true);
 
-		if (counter_all.get_bytes_all() > (30*1024*1024*1024LL)) break;
+		if (counter_all.get_bytes_all() > (config_test_maxsize)) break;
 
    } // all packets
   } // try
@@ -97,6 +98,7 @@ int main ()
 		std::cout << ex.what() << std::endl;
 		return 1;
 	}
+	cout << "Packet size: " << shm_data_size << " B" << endl;
 
    return 0;
 }
