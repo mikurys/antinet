@@ -30,7 +30,6 @@ const char * disclaimer = "*** WARNING: This is a work in progress, do NOT use t
 
 #include <cstring>
 
-
 #include "counter.hpp"
 
 #include "cpputils.hpp" // TODO move to lib later
@@ -58,7 +57,7 @@ class c_ipbench {
 
 	protected:
 		void prepare_socket(); ///< make sure that the lower level members of handling the socket are ready to run
-		void event_loop(); ///< the main loop
+		void event_loop(int thread_number); ///< the main loop
 
 	private:
 		std::string m_target_addr; ///< our target: IP address
@@ -70,6 +69,7 @@ class c_ipbench {
 		int m_sock; ///< the network socket
 		as_zerofill< sockaddr_in  > m_sockaddr4 ; ///< socket address (ipv4)
 		as_zerofill< sockaddr_in6 > m_sockaddr6 ; ///< socket address (ipv6)
+                int number_of_threads;
 };
 
 // ------------------------------------------------------------------
@@ -96,6 +96,11 @@ void c_ipbench::configure(const std::vector<std::string> & args) {
 		show_usage();
 		throw std::runtime_error("Invalid program options");
 	}
+        auto it = std::find(args.begin(), args.end(), "-j");
+        if (it != args.end())
+                number_of_threads = atoi((++it)->c_str());
+        else
+                number_of_threads = 1;
 
 	m_target_addr = args.at(1);
 	m_target_port = atoi(args.at(2).c_str());
@@ -161,17 +166,15 @@ void encrypt_buffer(vector<unsigned char> & buffer) {
 	for (bufix_t i=0; i<buffer.size(); ++i) buffer[i] = buffer[i] ^ xorpass;
 }
 
-void c_ipbench::event_loop() {
+void c_ipbench::event_loop(int thread_number) {
 	_info("Entering event loop");
 
 	vector<unsigned char> buffer(m_blocksize, 222);
 	c_counter counter(2,true);
 	c_counter counter_big(3,false);
 
-
-	long int loop_nr=0;
+	long int loop_nr=thread_number;
 	while (1) {
-		++loop_nr;
 
 		ssize_t sent;
 
@@ -218,17 +221,28 @@ void c_ipbench::event_loop() {
 		counter_big.tick(sent, std::cout);
 
 		if (loop_nr > (global_config_end_after_packet + 1000)) { _info("Limit - ending test after loop_nr="<<loop_nr); break; }
+
+		loop_nr+=number_of_threads;
 	}
 }
 
 void c_ipbench::run() {
 	std::cout << "Starting tests" << std::endl;
 	prepare_socket();
-	event_loop();
+        if (number_of_threads > 10 || number_of_threads < 1)
+                number_of_threads = 1;
+
+        std::vector<std::thread*> threads(number_of_threads - 1);
+        for(int i = 0; i< number_of_threads - 1; i++)
+                threads[i] = new std::thread([this, i](){this->event_loop(i+1);});
+
+        event_loop(number_of_threads);
+
+        for(int i = 0; i< number_of_threads - 1; i++)
+                threads[i]->join();
 }
 
 // ------------------------------------------------------------------
-
 
 int main(int argc, char **argv) {
 	std::cerr << disclaimer << std::endl;
@@ -238,5 +252,3 @@ int main(int argc, char **argv) {
 	bench.configure(args);
 	bench.run();
 }
-
-

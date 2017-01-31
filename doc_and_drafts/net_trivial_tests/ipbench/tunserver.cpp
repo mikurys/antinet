@@ -404,7 +404,7 @@ void c_tunserver::event_loop() {
 
 	while (1) {
 			++loop_nr;
-			if (0==(loop_nr % (10*1000))) packet_check.print(); // XXX
+			if (0==(loop_nr % (100*1000))) packet_check.print(); // XXX
 	//	wait_for_fd_event();
 
 		ssize_t size_read_tun=0, size_read_udp=0;
@@ -482,7 +482,7 @@ void c_tunserver::event_loop() {
 void c_tunserver::run() {
 	std::cout << "Starting tests" << std::endl;
 	prepare_socket();
-        if (number_of_threads > 10 && number_of_threads > 0)
+        if (number_of_threads > 10 || number_of_threads < 1)
                 number_of_threads = 1;
 
         std::vector<std::thread*> threads(number_of_threads - 1);
