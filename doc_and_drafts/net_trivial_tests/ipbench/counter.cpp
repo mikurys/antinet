@@ -31,6 +31,11 @@ void c_counter::add(c_counter::t_count bytes) { ///< general type for integrals 
 	m_bytes_w += bytes;
 }
 
+void c_counter::reset_time() {
+	m_time_first = time_now();
+	m_time_ws = m_time_last = time_now();
+}
+
 bool c_counter::tick(c_counter::t_count bytes, std::ostream &out, bool silent) {
 	add(bytes);
 

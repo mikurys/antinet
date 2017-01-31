@@ -13,3 +13,6 @@ Packet size: 64996 B gives 100.000GiB; Speed: 217.957 Kpck/s ,  108087.116 Mib/s
 @9K packets: 60 Gbps
 Packet size: 8996 B gives 100.000GiB; Speed: 893.294 Kpck/s ,  61337.627 Mib/s  = 7667.203 MiB/s ; Window 13.356s: 893.294 Kpck/s ,  61337.622 Mib/s  = 7667.203 MiB/s ; 
 
+@9K 1mt: 75 Gbps (more accurate timer?)
+Packet size: 9000 B gives: 100.000GiB; Speed: 1096.316 Kpck/s ,  75278.033 Mib/s  = 9409.754 MiB/s ; Window 10.882s: 1096.316 Kpck/s ,  75278.027 Mib/s  = 9409.753 MiB/s ; 
+

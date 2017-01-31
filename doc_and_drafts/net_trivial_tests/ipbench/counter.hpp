@@ -12,6 +12,8 @@ class c_counter {
 		void add(c_counter::t_count bytes); ///< general type for integrals (number of packets, of bytes)
 		bool tick(c_counter::t_count bytes, std::ostream &out, bool silent=false); ///< tick: add data; update clock; print; return - was print used
 
+		void reset_time(); ///< resets the time to current clock (but keeps number of bytes)
+
 		void print(std::ostream &out) const; ///< prints now the statistics
 
 		t_count get_pck_all() const; ///< read all packets count

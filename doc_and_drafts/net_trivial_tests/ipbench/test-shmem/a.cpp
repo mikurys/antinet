@@ -27,6 +27,12 @@ using namespace std;
 using namespace boost::interprocess;
 
 
+void* dbg_memset(bool dbg,  unsigned char* data, unsigned char pat, size_t size) {
+	if (dbg) _info("Will memset with pat="<<(int)pat<<" at data="<<(void*)data<<" size="<<size);
+	auto ret = std::memset( const_cast<unsigned char*>(data), pat, size);
+	return ret;
+}
+
 int the_program(bool program_is_client)
 {
 	_info("Starting program as: " << ( program_is_client ? "(client, writes data)" : "(server, reads data)" ) );
@@ -63,13 +69,14 @@ int the_program(bool program_is_client)
 	std::cout << "Starting writes" << std::endl; // <=== CLIENT or SERVER ?
 	cout << "Packet size: " << config_packet_size << " B" << endl;
 
-	atomic<unsigned long int> pattern_nr{0};
 	mutex lock_stats;
 
 	_info("shm: data="<<(void*)shm_data<<" size="<<shm_size);
 
 
 	auto main_loop = [&](int thread_nr) -> int {
+		// atomic<unsigned long int> pattern_nr{0};
+		atomic<unsigned long int> pattern_nr{0}; // <=== pattern is per-thread now, not global!
 
 	// --- for thread ---
 
@@ -85,91 +92,123 @@ int the_program(bool program_is_client)
 		_info("pck: data="<<(void*)packet_data<<" size="<<packet_size);
 	}
 
-	*(msg_header+0) = shflag_owner_writer; // mark - we use this SHM-msg
+	if (program_is_client) {
+		_info("I am the client - writting flag");
+		*(msg_header+0) = shflag_owner_writer; // mark - we use this SHM-msg
+	}
 
 	const bool dbg_pat=0; // pattern
 	const bool dbg_si=0; // spinlock index
+
+	unsigned long int loop_nr=0; // number of loop/packet in this thread, always must be from 0
 
 	try {
 
 		if (program_is_client) {
 			while(1) {
 				++pattern_nr;
+				++loop_nr;
 
 				//_info("before wait spinlock");
 				long long int si=0;
-				while (*(shm_ptr+0) != shflag_owner_writer) { ++si; }; // spinlock untill this memory belongs to me
+				while (*(msg_header+0) != shflag_owner_writer) { ++si; }; // spinlock untill this memory belongs to me
 				if (dbg_si) _info("si="<<si);
 				//_info("after wait spinlock");
 
 				// write it:
 				unsigned char pat = pattern_nr%256;
-				std::memset( const_cast<unsigned char*>(shm_data), pat, shm_data_size);
+				dbg_memset(dbg_pat , const_cast<unsigned char*>(packet_data), pat, packet_size);
 				//unsigned int s = shm_data_size;
 				//for (unsigned int i=0; i<s; ++i) shm_data[i] = pat;
-				if (dbg_pat) _info("At pattern_nr="<<pattern_nr<<": filled with pat=" << static_cast<int>(pat)
-				<< " size: "<<shm_data_size<<" from shm_data="<<(void*)shm_data);
 
-				*(shm_data+7) = 42; // mark
-				*(shm_data+99) = 99 %256; // mark
+				*(packet_data+7) = 42; // mark
+				*(packet_data+99) = 99 %256; // mark
+
 				//_info("before set spinlock");
-				*(shm_ptr+0) = shflag_owner_reader; // mark - for TUN
+				*(msg_header+0) = shflag_owner_reader; // mark - for TUN
 				//_info("after set spinlock");
 
 				{
-				lock_guard<mutex> lg(lock_stats);
-				auto size_packets = shm_size;
-				bool printed=false;
-				printed = printed || counter.tick(size_packets, std::cout);
-				bool printed_big = counter_big.tick(size_packets, std::cout);
-				printed = printed || printed_big;
-				//if (printed_big) packet_check.print();
-				counter_all.tick(size_packets, std::cout, true);
+					lock_guard<mutex> lg(lock_stats);
+
+					// ship first iteration time (maybe we waited for other program to start):
+					if (loop_nr <= 2) { counter.reset_time(); counter_big.reset_time(); counter_all.reset_time(); }
+
+					auto size_packets = packet_size;
+					bool printed=false;
+					printed = printed || counter.tick(size_packets, std::cout);
+					bool printed_big = counter_big.tick(size_packets, std::cout);
+					printed = printed || printed_big;
+					//if (printed_big) packet_check.print();
+					counter_all.tick(size_packets, std::cout, true);
 				}
 
-				if (counter_all.get_bytes_all() > (config_test_maxsize + 100)) break;
+				auto all = counter_all.get_bytes_all();
+				if (all > (config_test_maxsize + 100)) {
+					lock_guard<mutex> lg(lock_stats);
+					_info("mt#"<<thread_nr<<" will exit, since we processed all="<<all<<" B.");
+					break;
+				}
 			} // all packets
 		} // program is client
 		else { // program is server
 			while (1) {
 				++pattern_nr;
+				++loop_nr;
 				size_t size_packets=0;
 
 				long long int si=0;
-				while (*(shm_ptr+0) != shflag_owner_reader) { ++si; }; // spinlock untill this memory belongs to me
+				while (*(msg_header+0) != shflag_owner_reader) { ++si; }; // spinlock untill this memory belongs to me
 				if (dbg_si) _info("si="<<si);
 
 				// use our mem:
-				if ( *(shm_data+7) != 42) {
-				throw std::runtime_error("Receive problem, invalid MARKER");
+				if ( *(packet_data+7) != 42) {
+					throw std::runtime_error("Receive problem, invalid MARKER (A)");
 				}
-				if ( *(shm_data+99) != (99%256)) {
-				throw std::runtime_error("Receive problem, invalid MARKER");
-				}
-				unsigned char pat = pattern_nr%256;
-				long int pos;
-				do { // find a pos that is not a marker
-				pos = rand() % shm_data_size;
-				} while (!( (pos!=7) && (pos!=99)  ));
-				if (!( *(shm_data + pos) == pat )) {
-				_info("Invalid pattern, while pattern_nr="<<pattern_nr<<" at pos="<<(int)pos
-				<<" was: "<< static_cast<int>(*(shm_data + pos)) << ", expected: " << static_cast<int>(pat) );
-				throw std::runtime_error("Receive problem, invalid data");
+				if ( *(packet_data+99) != (99%256)) {
+					throw std::runtime_error("Receive problem, invalid MARKER (B)");
 				}
 
-				size_packets += shm_size;
+				unsigned char pat = pattern_nr%256;
+
+				{ // read random position of pattern
+					long int pos;
+					do { // find a pos that is not a marker
+						pos = rand() % packet_size;
+					} while (!( (pos!=7) && (pos!=99)  )
+					);
+
+					auto addr = packet_data + pos;
+
+					if (!( *addr == pat )) {
+						_info("Invalid pattern, while pattern_nr="<<pattern_nr<<" at pos="<<(int)pos
+							<<" at addr="<<addr<<", data was: " << static_cast<int>(*addr)
+							<<", expected: " << static_cast<int>(pat) );
+						throw std::runtime_error("Receive problem, invalid data");
+					}
+				}
+
+				size_packets += packet_size;
 
 				// end of read:
-				*(shm_ptr+0) = shflag_owner_writer; // semafor
+				*(msg_header+0) = shflag_owner_writer; // semafor
 
-				bool printed=false;
-				printed = printed || counter.tick(size_packets, std::cout);
-				bool printed_big = counter_big.tick(size_packets, std::cout);
-				printed = printed || printed_big;
-				//if (printed_big) packet_check.print();
-				counter_all.tick(size_packets, std::cout, true);
+				{
+					lock_guard<mutex> lg(lock_stats);
+					bool printed=false;
+					printed = printed || counter.tick(size_packets, std::cout);
+					bool printed_big = counter_big.tick(size_packets, std::cout);
+					printed = printed || printed_big;
+					//if (printed_big) packet_check.print();
+					counter_all.tick(size_packets, std::cout, true);
+				}
 
-				if (counter_all.get_bytes_all() > (config_test_maxsize)) break;
+				auto all = counter_all.get_bytes_all();
+				if (all > (config_test_maxsize)) {
+					lock_guard<mutex> lg(lock_stats);
+					_info("mt#"<<thread_nr<<" will exit, since we processed all="<<all<<" B.");
+					break;
+				}
 
 			} // all packets
 		} // program is server
@@ -195,7 +234,7 @@ int the_program(bool program_is_client)
 	}
 	vector<thread> threads;
 	threads.push_back( move( thread(main_loop , 0)));
-	threads.push_back( move( thread(main_loop , 1)));
+//	threads.push_back( move( thread(main_loop , 1)));
 	{
 		lock_guard<mutex> lg(lock_stats);
 		_info("Threads are running.");
