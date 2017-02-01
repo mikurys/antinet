@@ -88,7 +88,8 @@ void c_counter::print(std::ostream &out) const { ///< prints now the statistics 
 
 	if (m_is_main) {
 		if (time_all > 0) {
-			out << setw(6) << m_bytes_all/Gi << "GiB; "
+			out << "Sent " << setw(6) << m_bytes_all/Gi << "GiB; "
+					<< " in " << setw(6) << m_pck_all << " pck; "
 					<< "Speed: "
 									 << setw(w1) << (avg_pck_all / K) << " Kpck/s "
 					<< ",  " << setw(w1) << (avg_bytes_all*8 / Mi) << " Mib/s "

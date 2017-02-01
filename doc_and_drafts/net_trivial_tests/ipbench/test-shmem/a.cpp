@@ -26,12 +26,32 @@
 using namespace std;
 using namespace boost::interprocess;
 
+#define _fail(X) { _info(X); throw std::runtime_error("Error"); }
+
 
 void* dbg_memset(bool dbg,  unsigned char* data, unsigned char pat, size_t size) {
 	if (dbg) _info("Will memset with pat="<<(int)pat<<" at data="<<(void*)data<<" size="<<size);
 	auto ret = std::memset( const_cast<unsigned char*>(data), pat, size);
 	return ret;
 }
+
+/*
+
+
+0    4
+|             9004-v
+|....................................
+|.hdr. data        .hdr.    data    .
+|....................................
++------------------------------------
+^ shm_ptr
+^ msg_ptr (msg0)
+^ msg_header (msg0)
+     ^ msg_data (msg0)
+     ^ packet_data
+
+
+*/
 
 int the_program(bool program_is_client)
 {
@@ -51,7 +71,7 @@ int the_program(bool program_is_client)
 		shm = shared_memory_object( open_only, shm_name.c_str(), read_write);
 	}
 
-	// for packet 9000, for 2 thread: (9000+4)*2 = 18008
+	// for packet 9000, for 2 thread (header is 4): (9000+4)*2 = 18008
 	size_t shm_size_request = (config_packet_size + config_header_size) * config_thread_count;
 	_info("Truncate shm to size=" << shm_size_request);
 	shm.truncate( shm_size_request );
@@ -112,6 +132,10 @@ int the_program(bool program_is_client)
 			while(1) {
 				++pattern_nr;
 				++loop_nr;
+				unsigned char pat = pattern_nr%256;
+				auto mark1 = (pattern_nr/256) % 256; // mark
+				auto mark2 = (pat+42) % 256; // mark
+				//_info("pattern_nr="<<pattern_nr<<": mark1="<<mark1<<" mark2="<<mark2);
 
 				//_info("before wait spinlock");
 				long long int si=0;
@@ -120,13 +144,12 @@ int the_program(bool program_is_client)
 				//_info("after wait spinlock");
 
 				// write it:
-				unsigned char pat = pattern_nr%256;
 				dbg_memset(dbg_pat , const_cast<unsigned char*>(packet_data), pat, packet_size);
 				//unsigned int s = shm_data_size;
 				//for (unsigned int i=0; i<s; ++i) shm_data[i] = pat;
 
-				*(packet_data+7) = 42; // mark
-				*(packet_data+99) = 99 %256; // mark
+				*(packet_data+7) = mark1; // mark
+				*(packet_data+99) = mark2; // mark
 
 				//_info("before set spinlock");
 				*(msg_header+0) = shflag_owner_reader; // mark - for TUN
@@ -157,9 +180,15 @@ int the_program(bool program_is_client)
 			} // all packets
 		} // program is client
 		else { // program is server
+			long int checksum_foo1=0;
 			while (1) {
 				++pattern_nr;
 				++loop_nr;
+				unsigned char pat = pattern_nr%256;
+				auto mark1 = (pattern_nr/256) % 256; // mark
+				auto mark2 = (pat+42) % 256; // mark
+
+
 				size_t size_packets=0;
 
 				long long int si=0;
@@ -167,14 +196,12 @@ int the_program(bool program_is_client)
 				if (dbg_si) _info("si="<<si);
 
 				// use our mem:
-				if ( *(packet_data+7) != 42) {
-					throw std::runtime_error("Receive problem, invalid MARKER (A)");
+				if ( *(packet_data+7) != mark1) {
+					_fail("Receive problem, invalid MARKER mark1="<<mark1<<" in pattern_nr="<<pattern_nr);
 				}
-				if ( *(packet_data+99) != (99%256)) {
-					throw std::runtime_error("Receive problem, invalid MARKER (B)");
+				if ( *(packet_data+99) != mark2) {
+					_fail("Receive problem, invalid MARKER mark2="<<mark2<<" in pattern_nr="<<pattern_nr);
 				}
-
-				unsigned char pat = pattern_nr%256;
 
 				{ // read random position of pattern
 					long int pos;
@@ -192,6 +219,26 @@ int the_program(bool program_is_client)
 						throw std::runtime_error("Receive problem, invalid data");
 					}
 				}
+
+				{
+					unsigned char acc = 0;
+					//uint_fast32_t acc = 0;
+
+					for (uint_fast16_t i=0; i < packet_size; i += sizeof(acc)) {
+						acc ^= * reinterpret_cast<volatile decltype(acc) *>( & packet_data[i] );
+					}
+
+
+					//for(unsigned char d : (unsigned int i=0; i < packet_size; ++i) acc = acc ^ packet_data[i];
+					uint8_t acc_byte = 0;
+					// take e.g. 4 iterations, for 4 times 1-byte value of 4-byte (32-bit) long accumulator:
+					for (uint8_t part=0; part<sizeof(acc)/sizeof(acc_byte); ++part) {
+						acc_byte ^= acc >> (part*8);
+					}
+					// _info("acc_byte=" << (int)acc_byte << " from acc="<<acc << " on pattern_nr=" << pattern_nr);
+					if (acc_byte == 123) ++checksum_foo1;
+				}
+
 
 				size_packets += packet_size;
 
@@ -218,6 +265,7 @@ int the_program(bool program_is_client)
 				}
 
 			} // all packets
+			_info("checksum_foo1 = " << checksum_foo1);
 		} // program is server
 	} // try
 	catch(std::exception &ex){
