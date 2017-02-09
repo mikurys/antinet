@@ -61,10 +61,18 @@ Runs the program:
 */
 
 typedef enum {
-	e_ipc_shm_unsafe = 1,
+	e_ipc_shm_unsafe = 1, // using SHM without any proper synchronization, works only if SHM writes/reads are 100% consistent. Probably UB.
 } t_ipc_type;
 
-template <t_ipc_type T_IPC_TYPE>
+typedef enum {
+	e_data_send_zerofill = 1, // zero-fill entire buffer
+} t_data_send_type;
+
+typedef enum {
+	e_data_recv_check_few = 1, // check only few marker(s), e.g. 1-3 bytes per entire buffer
+} t_data_send_type;
+
+template <t_ipc_type T_IPC_TYPE, t_data_send_type T_SEND_TYPE>
 int the_program(bool program_is_producer)
 {
 	_info("Starting program as: " << ( program_is_producer ? "(producent, creates SHM, writes data)" : "(consumer, opens SHM, waits and reads data)" ) );
