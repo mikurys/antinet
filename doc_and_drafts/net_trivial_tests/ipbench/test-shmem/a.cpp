@@ -279,6 +279,7 @@ int the_program(bool program_is_client)
 	}
 	counter_all.print(std::cout);
 
+	return 0; // no error
 	} ; // thread main loop
 
 

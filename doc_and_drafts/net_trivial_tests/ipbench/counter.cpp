@@ -77,6 +77,9 @@ void c_counter::print(std::ostream &out) const { ///< prints now the statistics 
 	int w1=p1+1+5; // width
 
 	double K=1000, Mi = 1024*1024, Gi = 1024*Mi; // units
+
+	out << "[thread " << std::this_thread::get_id() << "] ";
+
 	out	<< std::setprecision(3) << std::fixed;
 
 	if (false) std::cerr << "Debug: m_bytes_all="<<m_bytes_all
