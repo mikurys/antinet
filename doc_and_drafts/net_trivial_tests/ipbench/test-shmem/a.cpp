@@ -53,9 +53,21 @@ void* dbg_memset(bool dbg,  unsigned char* data, unsigned char pat, size_t size)
 
 */
 
-int the_program(bool program_is_client)
+/*
+
+Runs the program:
+@param program_is_producer is true then produces data, is false then consumes
+
+*/
+
+typedef enum {
+	e_ipc_shm_unsafe = 1,
+} t_ipc_type;
+
+template <t_ipc_type T_IPC_TYPE>
+int the_program(bool program_is_producer)
 {
-	_info("Starting program as: " << ( program_is_client ? "(client, writes data)" : "(server, reads data)" ) );
+	_info("Starting program as: " << ( program_is_producer ? "(producent, creates SHM, writes data)" : "(consumer, opens SHM, waits and reads data)" ) );
 
 	string shm_name = "MySharedMemory";
 
@@ -64,7 +76,7 @@ int the_program(bool program_is_client)
 
 	_info("Create shm... (name: '" << shm_name<<"')");
 	shared_memory_object shm;
-	if (program_is_client) {
+	if (program_is_producer) {
 		shm = shared_memory_object( create_only, shm_name.c_str(), read_write);
 	}
 	else {
@@ -113,7 +125,7 @@ int the_program(bool program_is_client)
 		_info("pck: data="<<(void*)packet_data<<" size="<<packet_size);
 	}
 
-	if (program_is_client) {
+	if (program_is_producer) {
 		{
 			lock_guard<mutex> lg(lock_stats);
 			_info("I am the client - writting flag");
@@ -128,7 +140,7 @@ int the_program(bool program_is_client)
 
 	try {
 
-		if (program_is_client) {
+		if (program_is_producer) {
 			while(1) {
 				++pattern_nr;
 				++loop_nr;
@@ -324,7 +336,7 @@ int main(int argc, const char** argv) {
 		cerr << "Run program with argument 'a' for the client, and other with argument 'b' for server." << endl;
 		return 1;
 	}
-	int ret =	the_program( opt_type=="a" ); // client or server
+	int ret =	the_program<e_ipc_shm_unsafe>( opt_type=="a" ); // client or server
 	return ret;
 }
 
