@@ -7,10 +7,8 @@ How to use this tests:
 
 ```
 
-
 CURRENT RESULT:
 (on comp Dragon: AMD FX(tm)-6300 Six-Core Processor , Debian 8)
-
 
 30.0 Gb/s for 65KB packets is the goal - if not crypto
 30.0 Gb/s for 65KB packets is the goal - if crypto (4 or 8 core good CPU [1])
@@ -26,6 +24,33 @@ data seems correct (checking magic bytes at begin/end)
 
 0.559GiB; Speed:   2.351 Kpck/s ,  1793.883 Mib/s  = 224.235 MiB/s ; Window 1.270s:   2.362 Kpck/s ,  1801.908 Mib/s  = 225.239 MiB/s ;
 
+(on comp: Intel(R) Core(TM) i3-2100 CPU @ 3.10GHz 4 core processor, Debian 8)
+
+MT, MTU 6500
+Window 178.955s:  15.963 Kpck/s ,  7922.802 Mib/s  = 990.350 MiB/s ;
+MT, MTU 9000
+Window 70.799s:  80.368 Kpck/s ,  5550.292 Mib/s  = 693.786 MiB/s ;
+MT, MTU 1500
+Window 31.03s:  184.80 Kpck/s ,  2188.15 Mib/s  =  273.52 MiB/s ;
+
+Asio version:
+MT, MTU 6500
+Window 496.016s: 17416.838 Kpck/s ,  11981.653 Mib/s  = 1497.707 MiB/s ;
+MT, MTU 9000
+Window 100.630s: 15613.491 Kpck/s ,  7895.896 Mib/s  = 986.987 MiB/s ;
+MT, MTU 1500
+Window 37.819s: 13301.925 Kpck/s ,  2559.714 Mib/s  = 319.964 MiB/s ;
+
+(on Raspberry Pi: ARMv7 Processor rev 4 (v7l) 4 core processor)
+Asio version:
+MTU 65000
+Window 480.717s: 1268.219 Kpck/s ,  4129.657 Mib/s  = 516.207 MiB/s ;
+MTU 9000
+Window 161.606s: 1605.280 Kpck/s ,  1709.264 Mib/s  = 213.658 MiB/s ;
+MTU 1500
+Window 66.375s: 1694.400 Kpck/s ,  713.403 Mib/s  =  89.175 MiB/s ;
+MTU 1000
+Window 66.637s: 1709.953 Kpck/s ,  481.511 Mib/s  =  60.189 MiB/s ;
 
 MTU / buffer size:
 for 65K packets:
@@ -41,19 +66,17 @@ In console 1
 ./go-tun
 
 -> and we should get card like:
-galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  
+galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
           inet6 addr: fd00:808:808:808:808:808:808:808/8 Scope:Global
           UP POINTOPOINT RUNNING NOARP MULTICAST  MTU:65500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:500 
+          collisions:0 txqueuelen:500
           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-
 
 *** also *** to avoid losing 0.1% of packets as LOST/dropped,
 after starting the go-tun, run as root command:
 ifconfig galaxy0 txqueuelen 5000
-
 
 2a)
 In console 2
@@ -72,18 +95,16 @@ galaxy0   Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
           RX bytes:0 (0.0 B)  TX bytes:3092176440 (2.8 GiB)
 
 In tun:
- 2.759GiB; Speed:   146.846 Kpck/s ,   1738.779 Mib/s  =   217.347 MiB/s ; Window 1.000s:   152.000 Kpck/s ,   1799.805 Mib/s  =   224.976 MiB/s ; 
- Window 3.000s:   159.667 Kpck/s ,   1890.584 Mib/s  =   236.323 MiB/s ; 
- Packets: uniq=1909K ; Max=1911470 Dupli=0 Reord=0 Missing(now)=2470 0.13% LOST-PACKETS 
-
+ 2.759GiB; Speed:   146.846 Kpck/s ,   1738.779 Mib/s  =   217.347 MiB/s ; Window 1.000s:   152.000 Kpck/s ,   1799.805 Mib/s  =   224.976 MiB/s ;
+ Window 3.000s:   159.667 Kpck/s ,   1890.584 Mib/s  =   236.323 MiB/s ;
+ Packets: uniq=1909K ; Max=1911470 Dupli=0 Reord=0 Missing(now)=2470 0.13% LOST-PACKETS
 
 2b) *** this results are if edited to send 65000 packets ***
 In console 2
 ./go-cli-big
 
-60.584GiB; Speed:    58.824 Kpck/s ,  29194.551 Mib/s  =  3649.319 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  32011.826 Mib/s  =  4001.478 MiB/s ; 
-60.536GiB; Speed:    62.500 Kpck/s ,  30994.415 Mib/s  =  3874.302 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  31986.237 Mib/s  =  3998.280 MiB/s ; 
-
+60.584GiB; Speed:    58.824 Kpck/s ,  29194.551 Mib/s  =  3649.319 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  32011.826 Mib/s  =  4001.478 MiB/s ;
+60.536GiB; Speed:    62.500 Kpck/s ,  30994.415 Mib/s  =  3874.302 MiB/s ; Window 2.000s:    64.500 Kpck/s ,  31986.237 Mib/s  =  3998.280 MiB/s ;
 
 2x)
 
@@ -92,15 +113,11 @@ ping6 fd00:808:808:808:808:808:808:1111
 for basic test.
 ping will NOT WORK since no peering works, but then console1 will print the ping ICMP6 raw data + TUN/TAP/ethernet? headers
 
-
-
-
 Also some additional debug could be seen (maybe)
 e.g.:
 info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tunserver.cpp+353 size_read=65052 start_pos=52
-0 0 134 221 96 0 0 0 253 240 17 64 253 0 8 8 8 8 8 8 8 8 8 8 8 8 8 8 253 0 8 8 8 8 8 8 8 8 8 8 8 8 17 17 169 193 33 107 253 240 155 203 100 101 102 5 0 0 0 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 
+0 0 134 221 96 0 0 0 253 240 17 64 253 0 8 8 8 8 8 8 8 8 8 8 8 8 8 8 253 0 8 8 8 8 8 8 8 8 8 8 8 8 17 17 169 193 33 107 253 240 155 203 100 101 102 5 0 0 0 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222 222
 info: /home/rafalcode/work/antinet/doc_and_drafts/net_trivial_tests/ipbench/tunserver.cpp+353 size_read=65052 start_pos=52
-
 
 [1] crypto speeds done with ./tunserver.elf --demo crypto_stream_bench given around 1 GB = 8 Gbps (on 1 core)
 
@@ -113,12 +130,8 @@ Idea:
 ... [ ] evaluate speed of named piped for this
 ... [ ] evaluate speed of shmem
 
-
 === Other TODO
 [x] increase speed by MTU 1500 to 9000 and more? -- yes, big packets go fast and no lost
 [x] increase card txqueue to remove the 0.1% dropped at 1K size of packets
 
-
-
 ```
-
