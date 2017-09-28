@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	assert( block_size > 5 );
 
 	int mode_ipv6 = 0==strcmp("ipv6",argv[3]);  // ***
-	printf("IPv6 mode: %s" , (mode_ipv6 ? "YES, IPv6" : "no, ipv4"));
+	printf("\n\nIPv6 mode: %s\n\nnn" , (mode_ipv6 ? "YES, IPv6" : "no, ipv4"));
 	if (mode_ipv6) {
 		sock= socket(AF_INET6, SOCK_DGRAM, 0);
 		if (sock < 0) error("socket");
@@ -70,21 +70,22 @@ int main(int argc, char *argv[])
 	buffer[block_size - 2] = 'Z';
 	buffer[block_size - 1] = '\0';
 
-	std::thread thread1([&]() {
+	auto func_flow = [&]() {
 		while(1) {
-			n=sendto(sock,buffer,
-				block_size,0,(const struct sockaddr *)&server6,length);
+			const sockaddr * target =
+				mode_ipv6 ?
+				( (const struct sockaddr *) & server6 )
+				:
+				( (const struct sockaddr *) & server  )
+			;
+			n=sendto(sock,buffer,block_size,0,target,length);
 			if (n < 0) error("Sendto");
 		}
-	});
+	};
 
-	std::thread thread2([&]() {
-		while(1) {
-			n=sendto(sock,buffer,
-				block_size,0,(const struct sockaddr *)&server6,length);
-			if (n < 0) error("Sendto");
-		}
-	});
+	std::thread thread1( func_flow );
+	std::thread thread2( func_flow );
+
 	/*while (1) {
 		if (mode_ipv6) {
 			n=sendto(sock,buffer,
