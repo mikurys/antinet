@@ -1,4 +1,4 @@
-/* Creates a datagram server.  The port 
+/* Creates a datagram server.  The port
 	number is passed as an argument.  This
 	server runs forever */
 
@@ -13,7 +13,7 @@
 #include <time.h>
 #include <strings.h>
 
-#define BUFFER_SIZE 10000
+#define BUFFER_SIZE 100000
 
 void error(const char *msg)
 {
@@ -107,15 +107,12 @@ int main(int argc, char *argv[])
 		if (1==(count_all % 100))	{
 			long long int w_time2 = time(NULL); // now
 
-
 			if (w_time2 >= w_time1 + w_len) {
 				printf("\nStats at count: %lld \n", count_all);
 				printf("IPv6 mode: UDP %s\n" , (mode_ipv6 ? "YES" : "no (using IPv4. Try option ipv6 to use IPv6 instead)"));
-				
 
 				buf[n]='\0'; // TODO secure?
-				printf("Received: [%s]\n", buf);
-
+				//printf("Received: [%s]\n", buf);
 
 				double all_speed = count_all_b / ( ((double)w_time2) - time_all); // since start
 
@@ -147,4 +144,3 @@ int main(int argc, char *argv[])
 	}
 	return 0;
  }
-
